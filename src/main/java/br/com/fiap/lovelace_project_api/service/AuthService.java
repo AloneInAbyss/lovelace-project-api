@@ -2,6 +2,7 @@ package br.com.fiap.lovelace_project_api.service;
 
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
+import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.model.User;
 import br.com.fiap.lovelace_project_api.repository.UserRepository;
@@ -12,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +28,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserDetailsService userDetailsService;
     
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -78,6 +81,35 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(jwt)
                 .refreshToken(refreshToken)
+                .username(userPrincipal.getUsername())
+                .email(userPrincipal.getEmail())
+                .roles(userPrincipal.getAuthorities().stream()
+                        .map(Object::toString)
+                        .collect(java.util.stream.Collectors.toSet()))
+                .build();
+    }
+    
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        
+        // Extract username from refresh token
+        String username = jwtTokenProvider.extractUsername(refreshToken);
+        
+        // Load user details
+        UserPrincipal userPrincipal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
+        
+        // Validate the refresh token
+        if (!jwtTokenProvider.validateToken(refreshToken, userPrincipal)) {
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
+        
+        // Generate new access token and refresh token
+        String newAccessToken = jwtTokenProvider.generateToken(userPrincipal);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(userPrincipal);
+        
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
                 .roles(userPrincipal.getAuthorities().stream()

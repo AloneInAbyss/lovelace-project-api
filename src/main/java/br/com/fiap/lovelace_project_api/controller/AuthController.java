@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
+import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.service.AuthService;
 import jakarta.validation.Valid;
@@ -30,6 +31,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
     }
     

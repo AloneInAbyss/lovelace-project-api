@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "370d5b37-1fd2-47eb-ac81-3ee870f23dfe",
+		"_postman_id": "ad6f7b08-1b10-45a4-95a3-95ac575a0054",
 		"name": "Lovelace Project API",
 		"description": "API endpoints for testing authentication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -66,6 +66,14 @@
 									"        pm.expect(jsonData && jsonData.token, \"Token field is missing in response\").to.be.ok;",
 									"    });",
 									"}",
+									"",
+									"// Save the 'refreshToken' field as a collection variable if present",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+									"    pm.test(\"Refresh token is saved as collection variable\", function () {",
+									"        pm.expect(pm.collectionVariables.get(\"refresh_token\")).to.eql(jsonData.refreshToken);",
+									"    });",
+									"}",
 									""
 								],
 								"type": "text/javascript",
@@ -102,6 +110,76 @@
 								"api",
 								"auth",
 								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON",
+									"let jsonData;",
+									"try {",
+									"    jsonData = pm.response.json();",
+									"} catch (e) {",
+									"    pm.test(\"Response is valid JSON\", function () {",
+									"        pm.expect.fail(\"Response body is not valid JSON\");",
+									"    });",
+									"}",
+									"",
+									"// Save the new 'token' field as a collection variable if present",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"    pm.test(\"New token is saved as collection variable\", function () {",
+									"        pm.expect(pm.collectionVariables.get(\"jwt_token\")).to.eql(jsonData.token);",
+									"    });",
+									"} else {",
+									"    pm.test(\"Token field exists in response\", function () {",
+									"        pm.expect(jsonData && jsonData.token, \"Token field is missing in response\").to.be.ok;",
+									"    });",
+									"}",
+									"",
+									"// Save the new 'refreshToken' field as a collection variable if present",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+									"    pm.test(\"New refresh token is saved as collection variable\", function () {",
+									"        pm.expect(pm.collectionVariables.get(\"refresh_token\")).to.eql(jsonData.refreshToken);",
+									"    });",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/auth/refresh",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
 							]
 						}
 					},
@@ -197,6 +275,16 @@
 				{
 					"name": "Health Check",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -246,6 +334,10 @@
 		},
 		{
 			"key": "jwt_token",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
 			"value": ""
 		}
 	]
