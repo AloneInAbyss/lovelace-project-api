@@ -10,5 +10,20 @@
   {
     "name": "jwt.refresh-expiration",
     "type": "java.lang.String"
+  },
+  {
+    "name": "admin.username",
+    "type": "java.lang.String",
+    "description": "Admin username for initial user creation"
+  },
+  {
+    "name": "admin.email",
+    "type": "java.lang.String",
+    "description": "Admin email for initial user creation"
+  },
+  {
+    "name": "admin.password",
+    "type": "java.lang.String",
+    "description": "Admin password - must be set via ADMIN_PASSWORD environment variable"
   }
 ]}

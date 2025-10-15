@@ -22,7 +22,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+							"raw": "{\n  \"username\": \"john\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
 						},
 						"url": {
 							"raw": "{{baseURL}}/api/auth/register",
@@ -84,8 +84,12 @@
 						{
 							"listen": "prerequest",
 							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
 								"packages": {},
-								"type": "text/javascript"
+								"requests": {}
 							}
 						}
 					],
@@ -99,7 +103,88 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"john\",\n  \"password\": \"pass123\"\n}"
+							"raw": "{\n  \"username\": \"john\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/auth/login",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON",
+									"let jsonData;",
+									"try {",
+									"    jsonData = pm.response.json();",
+									"} catch (e) {",
+									"    pm.test(\"Response is valid JSON\", function () {",
+									"        pm.expect.fail(\"Response body is not valid JSON\");",
+									"    });",
+									"}",
+									"",
+									"// Save the 'token' field as a collection variable if present",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"    pm.test(\"Token is saved as collection variable\", function () {",
+									"        pm.expect(pm.collectionVariables.get(\"jwt_token\")).to.eql(jsonData.token);",
+									"    });",
+									"} else {",
+									"    pm.test(\"Token field exists in response\", function () {",
+									"        pm.expect(jsonData && jsonData.token, \"Token field is missing in response\").to.be.ok;",
+									"    });",
+									"}",
+									"",
+									"// Save the 'refreshToken' field as a collection variable if present",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+									"    pm.test(\"Refresh token is saved as collection variable\", function () {",
+									"        pm.expect(pm.collectionVariables.get(\"refresh_token\")).to.eql(jsonData.refreshToken);",
+									"    });",
+									"}",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
 						},
 						"url": {
 							"raw": "{{baseURL}}/api/auth/login",
@@ -295,6 +380,62 @@
 							"path": [
 								"actuator",
 								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Metrics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/actuator/metrics",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"actuator",
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Info",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/actuator/info",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"actuator",
+								"info"
 							]
 						}
 					},
