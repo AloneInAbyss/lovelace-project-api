@@ -1,4 +1,5 @@
 HELP.md
+TO_DO.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -31,3 +32,15 @@ build/
 
 ### VS Code ###
 .vscode/
+*.instructions.md
+
+### Environment ###
+.env
+.env.local
+
+### Logs ###
+*.log
+
+### OS ###
+.DS_Store
+Thumbs.db
