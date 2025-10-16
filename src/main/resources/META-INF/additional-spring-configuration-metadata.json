@@ -1,29 +1,44 @@
-{"properties": [
-  {
-    "name": "jwt.expiration",
-    "type": "java.lang.String"
-  },
-  {
-    "name": "jwt.secret",
-    "type": "java.lang.String"
-  },
-  {
-    "name": "jwt.refresh-expiration",
-    "type": "java.lang.String"
-  },
-  {
-    "name": "admin.username",
-    "type": "java.lang.String",
-    "description": "Admin username for initial user creation"
-  },
-  {
-    "name": "admin.email",
-    "type": "java.lang.String",
-    "description": "Admin email for initial user creation"
-  },
-  {
-    "name": "admin.password",
-    "type": "java.lang.String",
-    "description": "Admin password - must be set via ADMIN_PASSWORD environment variable"
-  }
-]}
+{
+  "properties": [
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.String",
+      "description": "Time for the JWT token to expire"
+    },
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key for signing JWT tokens"
+    },
+    {
+      "name": "jwt.refresh-expiration",
+      "type": "java.lang.String",
+      "description": "Time for the refresh token to expire"
+    },
+    {
+      "name": "admin.username",
+      "type": "java.lang.String",
+      "description": "Admin username for initial user creation"
+    },
+    {
+      "name": "admin.email",
+      "type": "java.lang.String",
+      "description": "Admin email for initial user creation"
+    },
+    {
+      "name": "admin.password",
+      "type": "java.lang.String",
+      "description": "Admin password for initial user creation"
+    },
+    {
+      "name": "email.verification.token.expiration",
+      "type": "java.lang.String",
+      "description": "Time for the verification email token to expire"
+    },
+    {
+      "name": "app.base.url",
+      "type": "java.lang.String",
+      "description": "Base URL of the application"
+    }
+  ]
+}

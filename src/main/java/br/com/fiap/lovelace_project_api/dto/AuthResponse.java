@@ -25,5 +25,7 @@ public class AuthResponse {
     private String email;
     
     private Set<String> roles;
+
+    private String message;
     
 }

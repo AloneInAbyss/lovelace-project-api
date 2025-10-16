@@ -9,40 +9,28 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "users")
-public class User {
+@Document(collection = "verification_tokens")
+public class VerificationToken {
     
     @Id
     private String id;
     
     @Indexed(unique = true)
-    private String username;
+    private String token;
     
-    @Indexed(unique = true)
+    private String userId;
+    
     private String email;
-
-    private boolean emailVerified;
-
-    private String emailVerificationToken;
     
-    private LocalDateTime emailVerificationTokenExpiry;
+    private LocalDateTime expiryDate;
     
-    private String password;
-    
-    @Builder.Default
-    private Set<String> roles = new HashSet<>();
-    
-    private boolean enabled;
+    private boolean used;
     
     private LocalDateTime createdAt;
-    
-    private LocalDateTime updatedAt;
     
 }

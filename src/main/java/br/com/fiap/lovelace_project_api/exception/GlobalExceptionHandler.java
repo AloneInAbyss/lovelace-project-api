@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
-                "Invalid username or password",
+                "Invalid credentials",
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -82,6 +82,18 @@ public class GlobalExceptionHandler {
         response.put("path", request.getRequestURI());
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerifiedException(EmailNotVerifiedException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Email Not Verified")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
     
 }
