@@ -118,6 +118,13 @@ public class AuthService {
         if (user.isEmailVerified()) {
             throw new RuntimeException("Email is already verified");
         }
+
+        if (checkIfRecentTokenExists(user)) {
+            throw new RuntimeException(
+                "There is a pending verification email. " +
+                "If you didn't receive it, you can request a new one in a few minutes."
+            );
+        }
         
         verificationTokenRepository.deleteByUserId(user.getId());
         
@@ -126,6 +133,20 @@ public class AuthService {
         verificationTokenRepository.save(verificationToken);
         
         emailService.sendVerificationEmail(user.getEmail(), verificationToken.getToken());
+    }
+
+    private boolean checkIfRecentTokenExists(User user) {
+        Optional<VerificationToken> recentToken = verificationTokenRepository
+                .findByUserId(user.getId())
+                .filter(token -> {
+                    long minutesSinceCreation = ChronoUnit.MINUTES.between(
+                        token.getCreatedAt(), 
+                        LocalDateTime.now()
+                    );
+                    return minutesSinceCreation < 5; // Within last 5 minutes
+                });
+
+        return recentToken.isPresent();
     }
     
     public AuthResponse login(LoginRequest request) {
@@ -137,26 +158,15 @@ public class AuthService {
         }
 
         if (!user.isEmailVerified()) {
-            Optional<VerificationToken> recentToken = verificationTokenRepository
-                    .findByUserId(user.getId())
-                    .filter(token -> !token.isUsed())
-                    .filter(token -> {
-                        long minutesSinceCreation = ChronoUnit.MINUTES.between(
-                            token.getCreatedAt(), 
-                            LocalDateTime.now()
-                        );
-                        return minutesSinceCreation < 5; // Within last 5 minutes
-                    });
-            
-            if (recentToken.isEmpty()) {
-                resendVerificationEmail(user.getEmail());
-                throw new EmailNotVerifiedException(
-                    "Email not verified. A new verification email has been sent to you."
-                );
-            } else {
+            if (checkIfRecentTokenExists(user)) {
                 throw new EmailNotVerifiedException(
                     "Email not verified. Please check your inbox for the verification email. " +
                     "If you didn't receive it, you can request a new one in a few minutes."
+                );
+            } else {
+                resendVerificationEmail(user.getEmail());
+                throw new EmailNotVerifiedException(
+                    "Email not verified. A new verification email has been sent to you."
                 );
             }
         }
