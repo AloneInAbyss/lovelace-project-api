@@ -6,9 +6,7 @@ import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.exception.EmailNotVerifiedException;
 import br.com.fiap.lovelace_project_api.model.User;
-import br.com.fiap.lovelace_project_api.model.VerificationToken;
 import br.com.fiap.lovelace_project_api.repository.UserRepository;
-import br.com.fiap.lovelace_project_api.repository.VerificationTokenRepository;
 import br.com.fiap.lovelace_project_api.security.JwtTokenProvider;
 import br.com.fiap.lovelace_project_api.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,7 +28,6 @@ import java.util.UUID;
 public class AuthService {
     
     private final UserRepository userRepository;
-    private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
@@ -47,6 +43,8 @@ public class AuthService {
             throw new RuntimeException("Email is already in use");
         }
         
+        String verificationToken = UUID.randomUUID().toString();
+        
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -54,17 +52,15 @@ public class AuthService {
                 .roles(Set.of("ROLE_USER"))
                 .enabled(false) // User must verify email to enable account
                 .emailVerified(false)
+                .emailVerificationToken(verificationToken)
+                .emailVerificationTokenExpiry(LocalDateTime.now().plusHours(24))
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
         
         User savedUser = userRepository.save(user);
 
-        VerificationToken verificationToken = createNewVerificationToken(savedUser);
-
-        verificationTokenRepository.save(verificationToken);
-
-        emailService.sendVerificationEmail(savedUser.getEmail(), verificationToken.getToken());
+        emailService.sendVerificationEmail(savedUser.getEmail(), verificationToken);
 
         return AuthResponse.builder()
                 .username(savedUser.getUsername())
@@ -73,40 +69,25 @@ public class AuthService {
                 .build();
     }
 
-    private VerificationToken createNewVerificationToken(User user) {
-        String token = UUID.randomUUID().toString();
-        return VerificationToken.builder()
-                .token(token)
-                .userId(user.getId())
-                .email(user.getEmail())
-                .expiryDate(LocalDateTime.now().plusHours(24))
-                .used(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-    }
-
     public void verifyEmail(String token) {
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+        User user = userRepository.findByEmailVerificationToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid verification token"));
 
-        if (verificationToken.isUsed()) {
-            throw new RuntimeException("Verification token has already been used");
+        if (user.isEmailVerified()) {
+            throw new RuntimeException("Email has already been verified");
         }
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (user.getEmailVerificationTokenExpiry() == null || 
+            user.getEmailVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Verification token has expired");
         }
 
-        User user = userRepository.findById(verificationToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         user.setEmailVerified(true);
         user.setEnabled(true);
+        user.setEmailVerificationToken(null);
+        user.setEmailVerificationTokenExpiry(null);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
-
-        verificationToken.setUsed(true);
-        verificationTokenRepository.save(verificationToken);
 
         emailService.sendWelcomeEmail(user.getEmail(), user.getUsername());
     }
@@ -126,27 +107,34 @@ public class AuthService {
             );
         }
         
-        verificationTokenRepository.deleteByUserId(user.getId());
+        // Generate new verification token
+        String verificationToken = UUID.randomUUID().toString();
+        user.setEmailVerificationToken(verificationToken);
+        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+        user.setUpdatedAt(LocalDateTime.now());
         
-        VerificationToken verificationToken = createNewVerificationToken(user);
+        userRepository.save(user);
         
-        verificationTokenRepository.save(verificationToken);
-        
-        emailService.sendVerificationEmail(user.getEmail(), verificationToken.getToken());
+        emailService.sendVerificationEmail(user.getEmail(), verificationToken);
     }
 
     private boolean checkIfRecentTokenExists(User user) {
-        Optional<VerificationToken> recentToken = verificationTokenRepository
-                .findByUserId(user.getId())
-                .filter(token -> {
-                    long minutesSinceCreation = ChronoUnit.MINUTES.between(
-                        token.getCreatedAt(), 
-                        LocalDateTime.now()
-                    );
-                    return minutesSinceCreation < 5; // Within last 5 minutes
-                });
-
-        return recentToken.isPresent();
+        if (user.getEmailVerificationToken() == null || user.getEmailVerificationTokenExpiry() == null) {
+            return false;
+        }
+        
+        // Check if token was created within last 5 minutes by checking if it's still far from expiry
+        // Token expires in 24 hours, so if it has more than 23 hours and 55 minutes left, it's recent
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryDate = user.getEmailVerificationTokenExpiry();
+        
+        if (expiryDate.isBefore(now)) {
+            // Token has already expired
+            return false;
+        }
+        
+        long minutesUntilExpiry = ChronoUnit.MINUTES.between(now, expiryDate);
+        return minutesUntilExpiry > (24 * 60 - 5); // More than 23:55 remaining means created within last 5 minutes
     }
     
     public AuthResponse login(LoginRequest request) {
