@@ -472,6 +472,252 @@
 			]
 		},
 		{
+			"name": "Wishlist",
+			"item": [
+				{
+					"name": "Get Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist?page=0&size=10&sortBy=addedAt",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "addedAt"
+								}
+							]
+						},
+						"description": "Get the authenticated user's wishlist with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Add to Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"gameId\": \"123456\",\n  \"notes\": \"Want to buy this!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist"
+							]
+						},
+						"description": "Add a game to the wishlist"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Wishlist Item",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notes\": \"Updated notes about this game\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/123456",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"123456"
+							]
+						},
+						"description": "Update notes for a wishlist item"
+					},
+					"response": []
+				},
+				{
+					"name": "Check if Game in Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/check/123456",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"check",
+								"123456"
+							]
+						},
+						"description": "Check if a specific game is in the user's wishlist"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/123456",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"123456"
+							]
+						},
+						"description": "Remove a game from the wishlist"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wishlist Count",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/count",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"count"
+							]
+						},
+						"description": "Get the total count of items in the wishlist"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/clear",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"clear"
+							]
+						},
+						"description": "Clear all items from the wishlist"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Actuator",
 			"item": [
 				{
