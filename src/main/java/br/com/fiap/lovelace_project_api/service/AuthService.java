@@ -223,4 +223,51 @@ public class AuthService {
                         .collect(java.util.stream.Collectors.toSet()))
                 .build();
     }
+    
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        
+        // Check if there's a recent password reset request (within 5 minutes)
+        if (user.getPasswordResetTokenExpiry() != null && 
+            user.getPasswordResetTokenExpiry().isAfter(LocalDateTime.now().minusMinutes(5))) {
+            throw new RuntimeException(
+                "A password reset email was recently sent. Please check your inbox or wait a few minutes before requesting another one."
+            );
+        }
+        
+        // Generate password reset token
+        String token = UUID.randomUUID().toString();
+        user.setPasswordResetToken(token);
+        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        userRepository.save(user);
+        
+        // Send password reset email
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+    
+    public void resetPassword(String token, String newPassword) {
+        // Find user by reset token
+        User user = userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid password reset token"));
+        
+        // Check if token is expired
+        if (user.getPasswordResetTokenExpiry() == null || 
+            user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Password reset token has expired");
+        }
+        
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetTokenExpiry(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        userRepository.save(user);
+        
+        // Send confirmation email
+        emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
+    }
 }

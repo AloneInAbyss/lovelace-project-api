@@ -10,11 +10,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
+import br.com.fiap.lovelace_project_api.dto.ForgotPasswordRequest;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
 import br.com.fiap.lovelace_project_api.dto.MessageResponse;
 import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.dto.ResendVerificationRequest;
+import br.com.fiap.lovelace_project_api.dto.ResetPasswordRequest;
 import br.com.fiap.lovelace_project_api.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +60,22 @@ public class AuthController {
     public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(MessageResponse.builder()
+            .message("If an account exists with that email, a password reset link has been sent.")
+            .build());
+    }
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(MessageResponse.builder()
+            .message("Password has been reset successfully! You can now log in with your new password.")
+            .build());
     }
     
 }

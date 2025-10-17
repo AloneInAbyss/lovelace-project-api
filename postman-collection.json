@@ -328,6 +328,64 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/auth/forgot-password",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"forgot-password"
+							]
+						},
+						"description": "Request a password reset email. Check your email or application logs for the reset token."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"<paste-token-from-email>\",\n  \"newPassword\": \"NewSecure123!\",\n  \"confirmPassword\": \"NewSecure123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/auth/reset-password",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"reset-password"
+							]
+						},
+						"description": "Complete the password reset using the token received via email. Password must be at least 8 characters with uppercase, lowercase, number, and special character."
+					},
+					"response": []
 				}
 			]
 		},

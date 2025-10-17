@@ -36,6 +36,10 @@ public class User {
     
     private String password;
     
+    private String passwordResetToken;
+    
+    private LocalDateTime passwordResetTokenExpiry;
+    
     @Builder.Default
     private Set<String> roles = new HashSet<>();
     

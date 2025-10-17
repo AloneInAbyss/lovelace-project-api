@@ -70,4 +70,54 @@ public class EmailService {
         }
     }
     
+    @Async
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            String resetUrl = baseUrl + "/api/auth/reset-password?token=" + token;
+            
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Password Reset Request - Lovelace Project");
+            message.setText(buildPasswordResetEmailContent(resetUrl));
+            
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
+    
+    private String buildPasswordResetEmailContent(String resetUrl) {
+        return "Hello,\n\n" +
+               "We received a request to reset your password for your Lovelace Project account.\n\n" +
+               "Please click the link below to reset your password:\n\n" +
+               resetUrl + "\n\n" +
+               "This link will expire in 1 hour.\n\n" +
+               "If you didn't request a password reset, please ignore this email and your password will remain unchanged.\n\n" +
+               "Best regards,\n" +
+               "Lovelace Project Team";
+    }
+    
+    @Async
+    public void sendPasswordChangedEmail(String toEmail, String username) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Password Changed - Lovelace Project");
+            message.setText("Hello " + username + ",\n\n" +
+                    "Your password has been changed successfully.\n\n" +
+                    "If you didn't make this change, please contact our support team immediately.\n\n" +
+                    "Best regards,\n" +
+                    "Lovelace Project Team");
+            
+            mailSender.send(message);
+            log.info("Password changed notification email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password changed email to: {}", toEmail, e);
+        }
+    }
+    
 }
