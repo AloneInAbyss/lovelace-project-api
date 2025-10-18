@@ -472,6 +472,96 @@
 			]
 		},
 		{
+			"name": "Games",
+			"item": [
+				{
+					"name": "Search Games",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/search?q=catan&page=0&size=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "catan"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Search for board games (public endpoint)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Game Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/1",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"1"
+							]
+						},
+						"description": "Get details of a specific game (public endpoint)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Game Listings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/1/listings?page=0&size=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"1",
+								"listings"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get listings for a specific game (public endpoint)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Wishlist",
 			"item": [
 				{
