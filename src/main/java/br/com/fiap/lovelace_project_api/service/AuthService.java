@@ -10,6 +10,8 @@ import br.com.fiap.lovelace_project_api.repository.UserRepository;
 import br.com.fiap.lovelace_project_api.security.JwtTokenProvider;
 import br.com.fiap.lovelace_project_api.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,6 +27,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     
     private final UserRepository userRepository;
@@ -33,6 +36,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -257,5 +261,31 @@ public class AuthService {
         
         // Send confirmation email
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
+    }
+    
+    /**
+     * Logout a user by blacklisting their access token and optionally their refresh token.
+     * Blacklisted tokens cannot be used for authentication until they naturally expire.
+     *
+     * @param accessToken The access token to blacklist
+     * @param refreshToken The refresh token to blacklist (optional)
+     */
+    public void logout(String accessToken, String refreshToken) {
+        // Blacklist the access token
+        tokenBlacklistService.blacklistToken(accessToken);
+        
+        // Blacklist the refresh token if provided
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            try {
+                tokenBlacklistService.blacklistToken(refreshToken);
+            } catch (Exception e) {
+                // Log but don't fail - access token is already blacklisted
+                // which is the primary security concern
+                log.warn("Failed to blacklist refresh token: {}", e.getMessage());
+            }
+        }
+        
+        // Clear security context
+        SecurityContextHolder.clearContext();
     }
 }

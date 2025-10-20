@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
 import br.com.fiap.lovelace_project_api.dto.ForgotPasswordRequest;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
+import br.com.fiap.lovelace_project_api.dto.LogoutRequest;
 import br.com.fiap.lovelace_project_api.dto.MessageResponse;
 import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
@@ -75,6 +77,34 @@ public class AuthController {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(MessageResponse.builder()
             .message("Password has been reset successfully! You can now log in with your new password.")
+            .build());
+    }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<MessageResponse> logout(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody(required = false) LogoutRequest request
+    ) {
+        // Extract token from Authorization header
+        String accessToken = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            accessToken = authHeader.substring(7).trim();
+        }
+        
+        if (accessToken == null || accessToken.isEmpty()) {
+            return ResponseEntity.badRequest().body(MessageResponse.builder()
+                .message("No access token provided")
+                .build());
+        }
+        
+        // Get refresh token from request body if provided
+        String refreshToken = (request != null) ? request.getRefreshToken() : null;
+        
+        // Logout and blacklist tokens
+        authService.logout(accessToken, refreshToken);
+        
+        return ResponseEntity.ok(MessageResponse.builder()
+            .message("Logged out successfully")
             .build());
     }
     

@@ -1,5 +1,6 @@
 package br.com.fiap.lovelace_project_api.security;
 
+import br.com.fiap.lovelace_project_api.service.TokenBlacklistService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -28,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
     
     @Override
     protected void doFilterInternal(
@@ -47,6 +49,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // Extract token from Authorization header
             final String jwt = authHeader.substring(7).trim();
+            
+            // Check if token is blacklisted
+            if (tokenBlacklistService.isBlacklisted(jwt)) {
+                log.warn("Attempt to use blacklisted token");
+                filterChain.doFilter(request, response);
+                return;
+            }
             
             // Extract username from token
             final String username = jwtTokenProvider.extractUsername(jwt);
