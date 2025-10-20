@@ -5,6 +5,7 @@ import br.com.fiap.lovelace_project_api.dto.LoginRequest;
 import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.exception.EmailNotVerifiedException;
+import br.com.fiap.lovelace_project_api.exception.TokenReuseException;
 import br.com.fiap.lovelace_project_api.model.User;
 import br.com.fiap.lovelace_project_api.repository.UserRepository;
 import br.com.fiap.lovelace_project_api.security.JwtTokenProvider;
@@ -190,6 +191,26 @@ public class AuthService {
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
         
+        // Check if the refresh token has been blacklisted (already used or revoked)
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            // This is a security breach - someone is trying to reuse an old refresh token
+            // This could indicate token theft
+            try {
+                String username = jwtTokenProvider.extractUsername(refreshToken);
+                log.error("SECURITY ALERT: Attempt to reuse blacklisted refresh token for user: {}", username);
+                
+                // Optional: Invalidate all tokens for this user by forcing re-login
+                // For now, we'll just reject the request
+                throw new TokenReuseException("Refresh token has been revoked. Please login again.");
+            } catch (TokenReuseException e) {
+                // Re-throw TokenReuseException
+                throw e;
+            } catch (Exception e) {
+                log.error("Failed to extract username from blacklisted token: {}", e.getMessage());
+                throw new TokenReuseException("Invalid refresh token. Please login again.");
+            }
+        }
+        
         // Extract username from refresh token
         String username = jwtTokenProvider.extractUsername(refreshToken);
         
@@ -201,9 +222,16 @@ public class AuthService {
             throw new RuntimeException("Invalid or expired refresh token");
         }
         
+        // Blacklist the old refresh token immediately (rotation)
+        // This ensures one-time use of refresh tokens
+        tokenBlacklistService.blacklistToken(refreshToken);
+        log.debug("Old refresh token blacklisted for user: {}", username);
+        
         // Generate new access token and refresh token
         String newAccessToken = jwtTokenProvider.generateToken(userPrincipal);
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(userPrincipal);
+        
+        log.info("Token refresh successful for user: {}", username);
         
         return AuthResponse.builder()
                 .token(newAccessToken)
