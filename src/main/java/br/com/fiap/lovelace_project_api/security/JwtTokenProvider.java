@@ -6,14 +6,17 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +26,15 @@ public class JwtTokenProvider {
     
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+    
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+    
+    @SuppressWarnings("unchecked")
+    public List<String> extractRoles(String token) {
+        return extractClaim(token, claims -> (List<String>) claims.get("roles"));
     }
     
     public Date extractExpiration(String token) {
@@ -52,13 +64,38 @@ public class JwtTokenProvider {
     }
     
     public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
+        Map<String, Object> claims = buildClaims(userDetails);
         return createToken(claims, userDetails.getUsername(), jwtProperties.getExpiration());
     }
     
     public String generateRefreshToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
+        Map<String, Object> claims = buildClaims(userDetails);
         return createToken(claims, userDetails.getUsername(), jwtProperties.getRefreshExpiration());
+    }
+    
+    /**
+     * Build claims map with userId and roles from UserDetails.
+     * This allows for authorization checks without database lookups.
+     *
+     * @param userDetails The user details containing userId and roles
+     * @return Map of claims to be included in the JWT
+     */
+    private Map<String, Object> buildClaims(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        
+        // Add userId if UserPrincipal (which has the id field)
+        if (userDetails instanceof UserPrincipal) {
+            UserPrincipal userPrincipal = (UserPrincipal) userDetails;
+            claims.put("userId", userPrincipal.getId());
+        }
+        
+        // Add roles/authorities
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+        claims.put("roles", roles);
+        
+        return claims;
     }
     
     private String createToken(Map<String, Object> claims, String subject, Long expiration) {

@@ -13,14 +13,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -28,7 +30,6 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     
     @Override
@@ -57,23 +58,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             
-            // Extract username from token
+            // Extract claims from token
             final String username = jwtTokenProvider.extractUsername(jwt);
+            final String userId = jwtTokenProvider.extractUserId(jwt);
+            final List<String> roles = jwtTokenProvider.extractRoles(jwt);
             
             // Authenticate if username is valid and no existing authentication
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                // Create authorities from roles in JWT
+                List<GrantedAuthority> authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
                 
-                // Validate token and set authentication
-                if (jwtTokenProvider.validateToken(jwt, userDetails)) {
+                // Create UserPrincipal with claims from token
+                UserPrincipal userPrincipal = new UserPrincipal(
+                        userId,
+                        username,
+                        null, // email not needed for authentication
+                        null, // password not needed for authentication
+                        authorities,
+                        true  // enabled (token wouldn't be valid if user was disabled)
+                );
+                
+                // Validate token signature and expiration
+                if (jwtTokenProvider.validateToken(jwt, userPrincipal)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
+                            userPrincipal,
                             null,
-                            userDetails.getAuthorities()
+                            authorities
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Successfully authenticated user: {}", username);
+                    log.debug("Successfully authenticated user from JWT claims: {}", username);
                 } else {
                     log.warn("JWT token validation failed for user: {}", username);
                 }
