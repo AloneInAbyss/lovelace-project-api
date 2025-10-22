@@ -19,4 +19,10 @@ public class ErrorResponse {
     private String message;
     private String path;
     
+    /**
+     * Machine-readable error code for frontend error handling.
+     * Examples: "TOKEN_EXPIRED", "INVALID_TOKEN", "TOKEN_MALFORMED"
+     */
+    private String errorCode;
+    
 }

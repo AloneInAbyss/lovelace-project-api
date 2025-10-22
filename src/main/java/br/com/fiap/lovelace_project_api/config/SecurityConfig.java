@@ -1,5 +1,6 @@
 package br.com.fiap.lovelace_project_api.config;
 
+import br.com.fiap.lovelace_project_api.security.JwtAuthenticationEntryPoint;
 import br.com.fiap.lovelace_project_api.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final CorsConfigurationSource corsConfigurationSource;
     
@@ -45,6 +47,9 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
