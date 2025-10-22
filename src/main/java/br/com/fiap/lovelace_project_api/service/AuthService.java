@@ -282,6 +282,11 @@ public class AuthService {
             throw new RuntimeException("Password reset token has expired");
         }
         
+        // Validate that new password is different from the current password
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new RuntimeException("New password must be different from the current password");
+        }
+        
         LocalDateTime now = LocalDateTime.now();
         
         // Update password and set passwordChangedAt timestamp
