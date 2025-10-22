@@ -13,16 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -31,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserDetailsService userDetailsService;
     
     @Override
     protected void doFilterInternal(
@@ -60,36 +58,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             // Extract claims from token
             final String username = jwtTokenProvider.extractUsername(jwt);
-            final String userId = jwtTokenProvider.extractUserId(jwt);
-            final List<String> roles = jwtTokenProvider.extractRoles(jwt);
             
             // Authenticate if username is valid and no existing authentication
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Create authorities from roles in JWT
-                List<GrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                // Load user details from database to get passwordChangedAt timestamp
+                UserPrincipal userPrincipal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
                 
-                // Create UserPrincipal with claims from token
-                UserPrincipal userPrincipal = new UserPrincipal(
-                        userId,
-                        username,
-                        null, // email not needed for authentication
-                        null, // password not needed for authentication
-                        authorities,
-                        true  // enabled (token wouldn't be valid if user was disabled)
-                );
-                
-                // Validate token signature and expiration
-                if (jwtTokenProvider.validateToken(jwt, userPrincipal)) {
+                // Validate token with password change timestamp check
+                if (jwtTokenProvider.validateToken(jwt, userPrincipal, userPrincipal.getPasswordChangedAt())) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userPrincipal,
                             null,
-                            authorities
+                            userPrincipal.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Successfully authenticated user from JWT claims: {}", username);
+                    log.debug("Successfully authenticated user: {}", username);
                 } else {
                     log.warn("JWT token validation failed for user: {}", username);
                 }

@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,7 @@ public class UserPrincipal implements UserDetails {
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
     private boolean enabled;
+    private LocalDateTime passwordChangedAt;
     
     public static UserPrincipal build(User user) {
         Collection<GrantedAuthority> authorities = user.getRoles().stream()
@@ -34,7 +36,8 @@ public class UserPrincipal implements UserDetails {
                 user.getEmail(),
                 user.getPassword(),
                 authorities,
-                user.isEnabled()
+                user.isEnabled(),
+                user.getPasswordChangedAt()
         );
     }
     

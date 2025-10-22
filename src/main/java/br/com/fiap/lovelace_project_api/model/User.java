@@ -40,6 +40,8 @@ public class User {
     
     private LocalDateTime passwordResetTokenExpiry;
     
+    private LocalDateTime passwordChangedAt;
+    
     @Builder.Default
     private Set<String> roles = new HashSet<>();
     

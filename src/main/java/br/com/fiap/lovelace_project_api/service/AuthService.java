@@ -50,6 +50,8 @@ public class AuthService {
         
         String verificationToken = UUID.randomUUID().toString();
         
+        LocalDateTime now = LocalDateTime.now();
+        
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -58,9 +60,10 @@ public class AuthService {
                 .enabled(false) // User must verify email to enable account
                 .emailVerified(false)
                 .emailVerificationToken(verificationToken)
-                .emailVerificationTokenExpiry(LocalDateTime.now().plusHours(24))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .emailVerificationTokenExpiry(now.plusHours(24))
+                .passwordChangedAt(now) // Set initial password change timestamp
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
         
         User savedUser = userRepository.save(user);
@@ -217,8 +220,8 @@ public class AuthService {
         // Load user details
         UserPrincipal userPrincipal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
         
-        // Validate the refresh token
-        if (!jwtTokenProvider.validateToken(refreshToken, userPrincipal)) {
+        // Validate the refresh token with password change timestamp check
+        if (!jwtTokenProvider.validateToken(refreshToken, userPrincipal, userPrincipal.getPasswordChangedAt())) {
             throw new RuntimeException("Invalid or expired refresh token");
         }
         
@@ -279,13 +282,19 @@ public class AuthService {
             throw new RuntimeException("Password reset token has expired");
         }
         
-        // Update password
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Update password and set passwordChangedAt timestamp
+        // This will invalidate all existing JWT tokens issued before this moment
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setPasswordResetToken(null);
         user.setPasswordResetTokenExpiry(null);
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setPasswordChangedAt(now);
+        user.setUpdatedAt(now);
         
         userRepository.save(user);
+        
+        log.info("Password reset successful for user: {}. All existing tokens invalidated.", user.getUsername());
         
         // Send confirmation email
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());

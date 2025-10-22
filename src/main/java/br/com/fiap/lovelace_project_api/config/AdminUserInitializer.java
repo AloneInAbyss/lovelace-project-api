@@ -35,14 +35,18 @@ public class AdminUserInitializer implements CommandLineRunner {
             return;
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
         User adminUser = User.builder()
                 .username(adminUsername)
                 .email(adminEmail)
                 .password(passwordEncoder.encode(adminPassword))
                 .roles(Set.of("ROLE_USER", "ROLE_ADMIN"))
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .emailVerified(true)
+                .passwordChangedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
 
         userRepository.save(adminUser);

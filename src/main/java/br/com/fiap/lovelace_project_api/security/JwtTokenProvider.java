@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +43,21 @@ public class JwtTokenProvider {
         return extractClaim(token, Claims::getExpiration);
     }
     
+    public Date extractIssuedAt(String token) {
+        return extractClaim(token, Claims::getIssuedAt);
+    }
+    
+    /**
+     * Extract the issued-at timestamp from a JWT token as LocalDateTime.
+     *
+     * @param token The JWT token
+     * @return The issued-at timestamp as LocalDateTime
+     */
+    public LocalDateTime extractIssuedAtAsLocalDateTime(String token) {
+        Date issuedAt = extractIssuedAt(token);
+        return LocalDateTime.ofInstant(issuedAt.toInstant(), ZoneId.systemDefault());
+    }
+    
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -58,9 +75,33 @@ public class JwtTokenProvider {
         return extractExpiration(token).before(new Date());
     }
     
-    public Boolean validateToken(String token, UserDetails userDetails) {
+    /**
+     * Validates a JWT token against user details and password change timestamp.
+     * This method ensures that tokens issued before a password change are invalidated.
+     *
+     * @param token The JWT token to validate
+     * @param userDetails The user details to validate against
+     * @param passwordChangedAt The timestamp when the password was last changed
+     * @return true if token is valid and was issued after the password change
+     */
+    public Boolean validateToken(String token, UserDetails userDetails, LocalDateTime passwordChangedAt) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        
+        // Basic validation
+        if (!username.equals(userDetails.getUsername()) || isTokenExpired(token)) {
+            return false;
+        }
+        
+        // Check if token was issued before password change
+        if (passwordChangedAt != null) {
+            LocalDateTime tokenIssuedAt = extractIssuedAtAsLocalDateTime(token);
+            // Token is invalid if it was issued before the password was changed
+            if (tokenIssuedAt.isBefore(passwordChangedAt)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     public String generateToken(UserDetails userDetails) {
