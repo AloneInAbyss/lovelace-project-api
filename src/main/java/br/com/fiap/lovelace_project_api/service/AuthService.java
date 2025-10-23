@@ -1,6 +1,8 @@
 package br.com.fiap.lovelace_project_api.service;
 
+import br.com.fiap.lovelace_project_api.config.JwtProperties;
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
+import br.com.fiap.lovelace_project_api.dto.AuthTokens;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
 import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
@@ -38,7 +40,18 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
     private final TokenBlacklistService tokenBlacklistService;
-
+    private final JwtProperties jwtProperties;
+    
+    /**
+     * Get the refresh token expiration time in seconds.
+     * Used for setting cookie max-age.
+     *
+     * @return Refresh token expiration in seconds
+     */
+    public long getRefreshTokenExpirationSeconds() {
+        return jwtProperties.getRefreshExpiration() / 1000;
+    }
+    
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username is already taken");
@@ -145,7 +158,7 @@ public class AuthService {
         return minutesUntilExpiry > (24 * 60 - 5); // More than 23:55 remaining means created within last 5 minutes
     }
     
-    public AuthResponse login(LoginRequest request) {
+    public AuthTokens login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
             .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
@@ -180,18 +193,22 @@ public class AuthService {
         String jwt = jwtTokenProvider.generateToken(userPrincipal);
         String refreshToken = jwtTokenProvider.generateRefreshToken(userPrincipal);
         
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
                 .token(jwt)
-                .refreshToken(refreshToken)
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
                 .roles(userPrincipal.getAuthorities().stream()
                         .map(Object::toString)
                         .collect(java.util.stream.Collectors.toSet()))
                 .build();
+        
+        return AuthTokens.builder()
+                .authResponse(authResponse)
+                .refreshToken(refreshToken)
+                .build();
     }
     
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
+    public AuthTokens refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
         
         // Check if the refresh token has been blacklisted (already used or revoked)
@@ -236,14 +253,18 @@ public class AuthService {
         
         log.info("Token refresh successful for user: {}", username);
         
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
                 .token(newAccessToken)
-                .refreshToken(newRefreshToken)
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
                 .roles(userPrincipal.getAuthorities().stream()
                         .map(Object::toString)
                         .collect(java.util.stream.Collectors.toSet()))
+                .build();
+        
+        return AuthTokens.builder()
+                .authResponse(authResponse)
+                .refreshToken(newRefreshToken)
                 .build();
     }
     

@@ -43,5 +43,30 @@
     "name": "cors.allowed-origins",
     "type": "java.lang.String",
     "description": "Comma-separated list of allowed origins for CORS"
+  },
+  {
+    "name": "jwt.cookie.name",
+    "type": "java.lang.String",
+    "description": "Cookie name for storing refresh token"
+  },
+  {
+    "name": "jwt.cookie.path",
+    "type": "java.lang.String",
+    "description": "Cookie path"
+  },
+  {
+    "name": "jwt.cookie.secure",
+    "type": "java.lang.String",
+    "description": "Secure flag for HTTPS only"
+  },
+  {
+    "name": "jwt.cookie.same-site",
+    "type": "java.lang.String",
+    "description": "SameSite attribute (Strict, Lax, or None)"
+  },
+  {
+    "name": "jwt.cookie.domain",
+    "type": "java.lang.String",
+    "description": "Cookie domain (optional, leave empty to use request domain)"
   }
 ]}
