@@ -159,7 +159,9 @@ public class AuthService {
     }
     
     public AuthTokens login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+        // Try to find user by username or email
+        User user = userRepository.findByUsername(request.getIdentity())
+            .or(() -> userRepository.findByEmail(request.getIdentity()))
             .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -182,7 +184,7 @@ public class AuthService {
         
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        user.getUsername(), // Always use username for authentication
                         request.getPassword()
                 )
         );
