@@ -18,13 +18,13 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
     
-    @Value("${app.base.url}")
-    private String baseUrl;
+    @Value("${app.client.url}")
+    private String clientUrl;
     
     @Async
     public void sendVerificationEmail(String toEmail, String token) {
         try {
-            String verificationUrl = baseUrl + "/api/auth/verify-email?token=" + token;
+            String verificationUrl = clientUrl + "/verify-email?token=" + token;
             
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -73,7 +73,7 @@ public class EmailService {
     @Async
     public void sendPasswordResetEmail(String toEmail, String token) {
         try {
-            String resetUrl = baseUrl + "/api/auth/reset-password?token=" + token;
+            String resetUrl = clientUrl + "/reset-password?token=" + token;
             
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);

@@ -35,9 +35,9 @@
     "description": "Time for the verification email token to expire"
   },
   {
-    "name": "app.base.url",
+    "name": "app.client.url",
     "type": "java.lang.String",
-    "description": "Base URL of the application"
+    "description": "Base URL of the client application"
   },
   {
     "name": "cors.allowed-origins",
