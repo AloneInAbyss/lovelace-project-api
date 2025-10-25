@@ -7,6 +7,7 @@ import br.com.fiap.lovelace_project_api.dto.LoginRequest;
 import br.com.fiap.lovelace_project_api.dto.RefreshTokenRequest;
 import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.exception.EmailNotVerifiedException;
+import br.com.fiap.lovelace_project_api.exception.ForgotPasswordMailPending;
 import br.com.fiap.lovelace_project_api.exception.TokenReuseException;
 import br.com.fiap.lovelace_project_api.model.User;
 import br.com.fiap.lovelace_project_api.repository.UserRepository;
@@ -277,7 +278,7 @@ public class AuthService {
         // Check if there's a recent password reset request (within 5 minutes)
         if (user.getPasswordResetTokenExpiry() != null && 
             user.getPasswordResetTokenExpiry().isAfter(LocalDateTime.now().minusMinutes(5))) {
-            throw new RuntimeException(
+            throw new ForgotPasswordMailPending(
                 "A password reset email was recently sent. Please check your inbox or wait a few minutes before requesting another one."
             );
         }

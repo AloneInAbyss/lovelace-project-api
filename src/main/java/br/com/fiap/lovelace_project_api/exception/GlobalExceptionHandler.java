@@ -100,6 +100,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(ForgotPasswordMailPending.class)
+    public ResponseEntity<ErrorResponse> handleForgotPasswordMailPendingException(ForgotPasswordMailPending ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forgot Password Email Pending")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     @ExceptionHandler(WishlistItemAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleWishlistItemAlreadyExistsException(
             WishlistItemAlreadyExistsException ex,
