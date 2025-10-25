@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.lovelace_project_api.dto.AuthResponse;
 import br.com.fiap.lovelace_project_api.dto.AuthTokens;
+import br.com.fiap.lovelace_project_api.dto.ChangePasswordRequest;
 import br.com.fiap.lovelace_project_api.dto.ForgotPasswordRequest;
 import br.com.fiap.lovelace_project_api.dto.LoginRequest;
 import br.com.fiap.lovelace_project_api.dto.MessageResponse;
@@ -20,6 +21,7 @@ import br.com.fiap.lovelace_project_api.dto.RegisterRequest;
 import br.com.fiap.lovelace_project_api.dto.ResendVerificationRequest;
 import br.com.fiap.lovelace_project_api.dto.ResetPasswordRequest;
 import br.com.fiap.lovelace_project_api.security.CookieUtil;
+import br.com.fiap.lovelace_project_api.security.SecurityUtils;
 import br.com.fiap.lovelace_project_api.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -110,6 +112,30 @@ public class AuthController {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(MessageResponse.builder()
             .message("Password has been reset successfully! You can now log in with your new password.")
+            .build());
+    }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletResponse httpResponse
+    ) {
+        // Get the authenticated username from SecurityContext
+        String username = SecurityUtils.getCurrentUsername();
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(MessageResponse.builder()
+                .message("User not authenticated")
+                .build());
+        }
+        
+        // Change the password
+        authService.changePassword(username, request.getCurrentPassword(), request.getNewPassword());
+        
+        // Delete the refresh token cookie
+        cookieUtil.deleteRefreshTokenCookie(httpResponse);
+        
+        return ResponseEntity.ok(MessageResponse.builder()
+            .message("Password changed successfully! Please log in again with your new password.")
             .build());
     }
     

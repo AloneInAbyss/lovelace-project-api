@@ -330,6 +330,45 @@ public class AuthService {
     }
     
     /**
+     * Change password for an authenticated user.
+     * Validates current password, updates to new password, and invalidates all existing tokens.
+     *
+     * @param username The username of the authenticated user
+     * @param currentPassword The current password for verification
+     * @param newPassword The new password
+     */
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        // Find the user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+        
+        // Validate that new password is different from the current password
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new RuntimeException("New password must be different from the current password");
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Update password and set passwordChangedAt timestamp
+        // This will invalidate all existing JWT tokens issued before this moment
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(now);
+        user.setUpdatedAt(now);
+        
+        userRepository.save(user);
+        
+        log.info("Password changed successfully for user: {}. All existing tokens invalidated.", user.getUsername());
+        
+        // Send confirmation email
+        emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
+    }
+    
+    /**
      * Logout a user by blacklisting their access token and optionally their refresh token.
      * Blacklisted tokens cannot be used for authentication until they naturally expire.
      *
