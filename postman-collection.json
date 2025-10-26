@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "ad6f7b08-1b10-45a4-95a3-95ac575a0054",
+		"_postman_id": "47fe9fcd-6f6a-4747-8008-1eee9b842afe",
 		"name": "Lovelace Project API",
 		"description": "API endpoints for testing authentication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -12,31 +12,36 @@
 			"item": [
 				{
 					"name": "Register",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"john\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
-						},
-						"url": {
-							"raw": "{{baseURL}}/api/auth/register",
-							"host": [
-								"{{baseURL}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"register"
-							]
+					"item": [
+						{
+							"name": "Register (1)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"john\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseURL}}/api/auth/register",
+									"host": [
+										"{{baseURL}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
 						}
-					},
-					"response": []
+					]
 				},
 				{
 					"name": "Login",
