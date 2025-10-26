@@ -5,6 +5,7 @@ import com.aloneinabyss.lovelace.auth.dto.AuthTokens;
 import com.aloneinabyss.lovelace.auth.dto.LoginRequest;
 import com.aloneinabyss.lovelace.auth.dto.RefreshTokenRequest;
 import com.aloneinabyss.lovelace.auth.dto.RegisterRequest;
+import com.aloneinabyss.lovelace.auth.dto.RegisterResponse;
 import com.aloneinabyss.lovelace.auth.exception.EmailNotVerifiedException;
 import com.aloneinabyss.lovelace.auth.exception.ForgotPasswordMailPending;
 import com.aloneinabyss.lovelace.auth.exception.TokenReuseException;
@@ -56,7 +57,7 @@ public class AuthService {
         return jwtProperties.getRefreshExpiration() / 1000;
     }
     
-    public AuthResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username is already taken");
         }
@@ -87,7 +88,7 @@ public class AuthService {
 
         emailService.sendVerificationEmail(savedUser.getEmail(), verificationToken);
 
-        return AuthResponse.builder()
+        return RegisterResponse.builder()
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
                 .message("User registered successfully. Please check your email for verification instructions.")

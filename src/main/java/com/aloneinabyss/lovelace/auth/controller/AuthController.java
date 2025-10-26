@@ -18,6 +18,7 @@ import com.aloneinabyss.lovelace.auth.dto.LoginRequest;
 import com.aloneinabyss.lovelace.auth.dto.MessageResponse;
 import com.aloneinabyss.lovelace.auth.dto.RefreshTokenRequest;
 import com.aloneinabyss.lovelace.auth.dto.RegisterRequest;
+import com.aloneinabyss.lovelace.auth.dto.RegisterResponse;
 import com.aloneinabyss.lovelace.auth.dto.ResendVerificationRequest;
 import com.aloneinabyss.lovelace.auth.dto.ResetPasswordRequest;
 import com.aloneinabyss.lovelace.auth.service.AuthService;
@@ -38,8 +39,8 @@ public class AuthController {
     private final CookieUtil cookieUtil;
     
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
