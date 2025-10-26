@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,17 +15,45 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.aloneinabyss.lovelace.auth.exception.EmailNotVerifiedException;
-import com.aloneinabyss.lovelace.auth.exception.ForgotPasswordMailPending;
-import com.aloneinabyss.lovelace.auth.exception.TokenReuseException;
+import com.aloneinabyss.lovelace.shared.service.MessageService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
     
+    private final MessageService messageService;
+    
+    /**
+     * Handle all ApplicationException subclasses (ValidationException, AuthenticationException, etc.)
+     * This provides consistent error responses with error codes and localized messages.
+     */
+    @ExceptionHandler(ApplicationException.class)
+    public ResponseEntity<ErrorResponse> handleApplicationException(
+            ApplicationException ex, 
+            HttpServletRequest request
+    ) {
+        String localizedMessage = messageService.getMessage(ex.getMessageKey(), ex.getMessageArgs());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(ex.getStatus().value())
+                .error(ex.getStatus().getReasonPhrase())
+                .errorCode(ex.getErrorCode())
+                .message(localizedMessage)
+                .path(request.getRequestURI())
+                .build();
+        
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+    
+    /**
+     * Fallback handler for generic RuntimeException.
+     * Only used for exceptions that don't extend ApplicationException.
+     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(
             RuntimeException ex, 
@@ -49,6 +78,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
+                .errorCode(ErrorCode.USER_NOT_FOUND.name())
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -64,7 +94,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .message("Invalid credentials")
+                .errorCode(ErrorCode.INVALID_CREDENTIALS.name())
+                .message(messageService.getMessage("auth.login.invalid.credentials"))
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -91,46 +122,6 @@ public class GlobalExceptionHandler {
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
-
-    @ExceptionHandler(EmailNotVerifiedException.class)
-    public ResponseEntity<ErrorResponse> handleEmailNotVerifiedException(EmailNotVerifiedException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.FORBIDDEN.value())
-                .error("Email Not Verified")
-                .message(ex.getMessage())
-                .build();
-        
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-
-    @ExceptionHandler(ForgotPasswordMailPending.class)
-    public ResponseEntity<ErrorResponse> handleForgotPasswordMailPendingException(ForgotPasswordMailPending ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.FORBIDDEN.value())
-                .error("Forgot Password Email Pending")
-                .message(ex.getMessage())
-                .build();
-        
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-    
-    @ExceptionHandler(TokenReuseException.class)
-    public ResponseEntity<ErrorResponse> handleTokenReuseException(
-            TokenReuseException ex,
-            HttpServletRequest request
-    ) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Unauthorized")
-                .errorCode("TOKEN_REUSED")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
     
     /**
      * Handle JWT token expiration exceptions thrown from services (e.g., during refresh).
@@ -144,8 +135,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .errorCode("TOKEN_EXPIRED")
-                .message("JWT token has expired. Please refresh your token or login again.")
+                .errorCode(ErrorCode.TOKEN_EXPIRED.name())
+                .message(messageService.getMessage("auth.token.expired"))
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -164,7 +155,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
                 .errorCode("TOKEN_MALFORMED")
-                .message("JWT token is malformed or invalid.")
+                .message(messageService.getMessage("auth.token.invalid"))
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -183,7 +174,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
                 .errorCode("TOKEN_SIGNATURE_INVALID")
-                .message("JWT signature validation failed.")
+                .message(messageService.getMessage("auth.token.invalid"))
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -201,8 +192,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .errorCode("TOKEN_INVALID")
-                .message("JWT token is invalid: " + ex.getMessage())
+                .errorCode(ErrorCode.TOKEN_INVALID.name())
+                .message(messageService.getMessage("auth.token.invalid"))
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);

@@ -1,5 +1,7 @@
 package com.aloneinabyss.lovelace.shared.service;
 
+import com.aloneinabyss.lovelace.shared.exception.ErrorCode;
+import com.aloneinabyss.lovelace.shared.exception.InternalServerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +47,7 @@ public class EmailService {
             log.info("Verification email sent to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", toEmail, e);
-            throw new RuntimeException(messageService.getMessage("email.send.failed", locale), e);
+            throw new InternalServerException(ErrorCode.EMAIL_SEND_FAILED, e);
         }
     }
     
@@ -90,7 +92,7 @@ public class EmailService {
             log.info("Password reset email sent to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
-            throw new RuntimeException(messageService.getMessage("email.send.failed", locale), e);
+            throw new InternalServerException(ErrorCode.EMAIL_SEND_FAILED, e);
         }
     }
     

@@ -1,6 +1,8 @@
 package com.aloneinabyss.lovelace.security.service;
 
 import com.aloneinabyss.lovelace.security.JwtTokenProvider;
+import com.aloneinabyss.lovelace.shared.exception.ErrorCode;
+import com.aloneinabyss.lovelace.shared.exception.InternalServerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -48,7 +50,7 @@ public class TokenBlacklistService {
             }
         } catch (Exception e) {
             log.error("Failed to blacklist token: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to blacklist token", e);
+            throw new InternalServerException(ErrorCode.INTERNAL_ERROR, "error.internal", e);
         }
     }
     

@@ -6,14 +6,16 @@ import com.aloneinabyss.lovelace.auth.dto.LoginRequest;
 import com.aloneinabyss.lovelace.auth.dto.RefreshTokenRequest;
 import com.aloneinabyss.lovelace.auth.dto.RegisterRequest;
 import com.aloneinabyss.lovelace.auth.dto.RegisterResponse;
-import com.aloneinabyss.lovelace.auth.exception.EmailNotVerifiedException;
-import com.aloneinabyss.lovelace.auth.exception.ForgotPasswordMailPending;
-import com.aloneinabyss.lovelace.auth.exception.TokenReuseException;
 import com.aloneinabyss.lovelace.auth.model.User;
 import com.aloneinabyss.lovelace.auth.repository.UserRepository;
 import com.aloneinabyss.lovelace.security.JwtTokenProvider;
 import com.aloneinabyss.lovelace.security.UserPrincipal;
 import com.aloneinabyss.lovelace.security.service.TokenBlacklistService;
+import com.aloneinabyss.lovelace.shared.exception.AuthenticationException;
+import com.aloneinabyss.lovelace.shared.exception.ConflictException;
+import com.aloneinabyss.lovelace.shared.exception.ErrorCode;
+import com.aloneinabyss.lovelace.shared.exception.NotFoundException;
+import com.aloneinabyss.lovelace.shared.exception.ValidationException;
 import com.aloneinabyss.lovelace.shared.service.EmailService;
 import com.aloneinabyss.lovelace.shared.service.MessageService;
 
@@ -54,15 +56,15 @@ public class AuthService {
      *
      * @param request The registration request containing username, email, and password
      * @return RegisterResponse containing user details and success message
-     * @throws RuntimeException if username or email is already taken
+     * @throws ValidationException if username or email is already taken
      */
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException(messageService.getMessage("auth.register.username.taken"));
+            throw new ValidationException(ErrorCode.USERNAME_TAKEN);
         }
         
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException(messageService.getMessage("auth.register.email.taken"));
+            throw new ValidationException(ErrorCode.EMAIL_TAKEN);
         }
         
         String verificationToken = UUID.randomUUID().toString();
@@ -99,19 +101,21 @@ public class AuthService {
      * Enables the user account and sends a welcome email upon successful verification.
      *
      * @param token The email verification token
-     * @throws RuntimeException if token is invalid, expired, or email is already verified
+     * @throws ValidationException if token is invalid
+     * @throws ConflictException if email is already verified
+     * @throws AuthenticationException if token is expired
      */
     public void verifyEmail(String token) {
         User user = userRepository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.email.token.invalid")));
+                .orElseThrow(() -> new ValidationException(ErrorCode.INVALID_TOKEN));
 
         if (user.isEmailVerified()) {
-            throw new RuntimeException(messageService.getMessage("auth.email.already.verified"));
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_VERIFIED);
         }
 
         if (user.getEmailVerificationTokenExpiry() == null || 
             user.getEmailVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException(messageService.getMessage("auth.email.token.expired"));
+            throw new AuthenticationException(ErrorCode.TOKEN_EXPIRED);
         }
 
         user.setEmailVerified(true);
@@ -130,18 +134,19 @@ public class AuthService {
      * Prevents spam by checking if a recent verification email was already sent.
      *
      * @param email The email address to send verification to
-     * @throws RuntimeException if user not found, email already verified, or recent token exists
+     * @throws NotFoundException if user not found
+     * @throws ConflictException if email already verified or recent token exists
      */
     public void resendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found")));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
         
         if (user.isEmailVerified()) {
-            throw new RuntimeException(messageService.getMessage("auth.email.already.verified"));
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_VERIFIED);
         }
 
         if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
-            throw new RuntimeException(messageService.getMessage("auth.email.verification.pending"));
+            throw new ConflictException(ErrorCode.EMAIL_VERIFICATION_PENDING);
         }
         
         // Generate new verification token
@@ -162,25 +167,24 @@ public class AuthService {
      *
      * @param request The login request containing username/email and password
      * @return AuthTokens containing access token, refresh token, and user details
-     * @throws RuntimeException if credentials are invalid
-     * @throws EmailNotVerifiedException if email is not verified
+     * @throws AuthenticationException if credentials are invalid or email is not verified
      */
     public AuthTokens login(LoginRequest request) {
         // Try to find user by username or email
         User user = userRepository.findByUsername(request.getIdentity())
             .or(() -> userRepository.findByEmail(request.getIdentity()))
-            .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.login.invalid.credentials")));
+            .orElseThrow(() -> new AuthenticationException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException(messageService.getMessage("auth.login.invalid.credentials"));
+            throw new AuthenticationException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         if (!user.isEmailVerified()) {
             if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
-                throw new EmailNotVerifiedException(messageService.getMessage("auth.login.email.not.verified.pending"));
+                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED);
             } else {
                 resendVerificationEmail(user.getEmail());
-                throw new EmailNotVerifiedException(messageService.getMessage("auth.login.email.not.verified.sent"));
+                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED);
             }
         }
         
@@ -219,8 +223,7 @@ public class AuthService {
      *
      * @param request The refresh token request containing the current refresh token
      * @return AuthTokens containing new access token, new refresh token, and user details
-     * @throws TokenReuseException if refresh token has been blacklisted (potential security breach)
-     * @throws RuntimeException if refresh token is invalid or expired
+     * @throws AuthenticationException if refresh token has been blacklisted, is invalid, or expired
      */
     public AuthTokens refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
@@ -235,13 +238,13 @@ public class AuthService {
                 
                 // Optional: Invalidate all tokens for this user by forcing re-login
                 // For now, we'll just reject the request
-                throw new TokenReuseException(messageService.getMessage("auth.refresh.token.revoked"));
-            } catch (TokenReuseException e) {
-                // Re-throw TokenReuseException
+                throw new AuthenticationException(ErrorCode.TOKEN_REUSED);
+            } catch (AuthenticationException e) {
+                // Re-throw AuthenticationException
                 throw e;
             } catch (Exception e) {
                 log.error("Failed to extract username from blacklisted token: {}", e.getMessage());
-                throw new TokenReuseException(messageService.getMessage("auth.refresh.token.invalid"));
+                throw new AuthenticationException(ErrorCode.TOKEN_REUSED);
             }
         }
         
@@ -253,7 +256,7 @@ public class AuthService {
         
         // Validate the refresh token with password change timestamp check
         if (!jwtTokenProvider.validateToken(refreshToken, userPrincipal, userPrincipal.getPasswordChangedAt())) {
-            throw new RuntimeException(messageService.getMessage("auth.refresh.token.invalid.or.expired"));
+            throw new AuthenticationException(ErrorCode.TOKEN_INVALID);
         }
         
         // Blacklist the old refresh token immediately (rotation)
@@ -287,16 +290,16 @@ public class AuthService {
      * Prevents spam by checking if a recent password reset email was sent within 5 minutes.
      *
      * @param email The email address of the user requesting password reset
-     * @throws RuntimeException if user not found with the provided email
-     * @throws ForgotPasswordMailPending if a recent password reset email was already sent
+     * @throws NotFoundException if user not found with the provided email
+     * @throws ConflictException if a recent password reset email was already sent
      */
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found.email", email)));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
         
         // Check if there's a recent password reset request (within 5 minutes)
         if (tokenValidationService.hasRecentPasswordResetToken(user)) {
-            throw new ForgotPasswordMailPending(messageService.getMessage("auth.password.reset.pending"));
+            throw new ConflictException(ErrorCode.PASSWORD_RESET_PENDING);
         }
         
         // Generate password reset token
@@ -318,22 +321,23 @@ public class AuthService {
      *
      * @param token The password reset token
      * @param newPassword The new password to set
-     * @throws RuntimeException if token is invalid, expired, or new password matches current password
+     * @throws ValidationException if token is invalid or new password matches current password
+     * @throws AuthenticationException if token is expired
      */
     public void resetPassword(String token, String newPassword) {
         // Find user by reset token
         User user = userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.password.reset.token.invalid")));
+                .orElseThrow(() -> new ValidationException(ErrorCode.INVALID_TOKEN));
         
         // Check if token is expired
         if (user.getPasswordResetTokenExpiry() == null || 
             user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException(messageService.getMessage("auth.password.reset.token.expired"));
+            throw new AuthenticationException(ErrorCode.TOKEN_EXPIRED);
         }
         
         // Validate that new password is different from the current password
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new RuntimeException(messageService.getMessage("auth.password.must.be.different"));
+            throw new ValidationException(ErrorCode.PASSWORD_MUST_BE_DIFFERENT);
         }
         
         LocalDateTime now = LocalDateTime.now();
@@ -361,20 +365,22 @@ public class AuthService {
      * @param username The username of the authenticated user
      * @param currentPassword The current password for verification
      * @param newPassword The new password
+     * @throws NotFoundException if user not found
+     * @throws ValidationException if current password is incorrect or new password matches current password
      */
     public void changePassword(String username, String currentPassword, String newPassword) {
         // Find the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found")));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
         
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new RuntimeException(messageService.getMessage("auth.password.current.incorrect"));
+            throw new ValidationException(ErrorCode.PASSWORD_CURRENT_INCORRECT);
         }
         
         // Validate that new password is different from the current password
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new RuntimeException(messageService.getMessage("auth.password.must.be.different"));
+            throw new ValidationException(ErrorCode.PASSWORD_MUST_BE_DIFFERENT);
         }
         
         LocalDateTime now = LocalDateTime.now();
