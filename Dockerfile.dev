@@ -5,6 +5,8 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
+COPY boardgames_ranks.csv ./boardgames_ranks.csv
+
 COPY src ./src
 
 EXPOSE 8080

@@ -68,5 +68,20 @@
     "name": "jwt.cookie.domain",
     "type": "java.lang.String",
     "description": "Cookie domain (optional, leave empty to use request domain)"
+  },
+  {
+    "name": "bgg.csv.url",
+    "type": "java.lang.String",
+    "description": "URL to download the BGG CSV file from"
+  },
+  {
+    "name": "bgg.csv.local.path",
+    "type": "java.lang.String",
+    "description": "Local file path to store the BGG CSV file"
+  },
+  {
+    "name": "bgg.csv.delete-after-import",
+    "type": "java.lang.String",
+    "description": "Flag to delete the local CSV file after import"
   }
 ]}
