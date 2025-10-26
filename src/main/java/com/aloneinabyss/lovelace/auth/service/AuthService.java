@@ -28,7 +28,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,6 +43,7 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final TokenValidationService tokenValidationService;
     
     /**
      * Register a new user account.
@@ -138,7 +138,7 @@ public class AuthService {
             throw new RuntimeException("Email is already verified");
         }
 
-        if (checkIfRecentTokenExists(user)) {
+        if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
             throw new RuntimeException(
                 "There is a pending verification email. " +
                 "If you didn't receive it, you can request a new one in a few minutes."
@@ -156,32 +156,6 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), verificationToken);
     }
 
-    /**
-     * Check if a recent verification or reset token was generated within the last 5 minutes.
-     * Used to prevent spam and excessive token generation requests.
-     *
-     * @param user The user to check for recent tokens
-     * @return true if a recent token exists, false otherwise
-     */
-    private boolean checkIfRecentTokenExists(User user) {
-        if (user.getEmailVerificationToken() == null || user.getEmailVerificationTokenExpiry() == null) {
-            return false;
-        }
-        
-        // Check if token was created within last 5 minutes by checking if it's still far from expiry
-        // Token expires in 24 hours, so if it has more than 23 hours and 55 minutes left, it's recent
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiryDate = user.getEmailVerificationTokenExpiry();
-        
-        if (expiryDate.isBefore(now)) {
-            // Token has already expired
-            return false;
-        }
-        
-        long minutesUntilExpiry = ChronoUnit.MINUTES.between(now, expiryDate);
-        return minutesUntilExpiry > (24 * 60 - 5); // More than 23:55 remaining means created within last 5 minutes
-    }
-    
     /**
      * Authenticate a user and generate access and refresh tokens.
      * Supports login with username or email. Verifies credentials and email verification status.
@@ -203,7 +177,7 @@ public class AuthService {
         }
 
         if (!user.isEmailVerified()) {
-            if (checkIfRecentTokenExists(user)) {
+            if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
                 throw new EmailNotVerifiedException(
                     "Email not verified. Please check your inbox for the verification email. " +
                     "If you didn't receive it, you can request a new one in a few minutes."
@@ -327,8 +301,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
         
         // Check if there's a recent password reset request (within 5 minutes)
-        if (user.getPasswordResetTokenExpiry() != null && 
-            user.getPasswordResetTokenExpiry().isAfter(LocalDateTime.now().minusMinutes(5))) {
+        if (tokenValidationService.hasRecentPasswordResetToken(user)) {
             throw new ForgotPasswordMailPending(
                 "A password reset email was recently sent. Please check your inbox or wait a few minutes before requesting another one."
             );
