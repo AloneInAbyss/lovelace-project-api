@@ -1,6 +1,6 @@
 package com.aloneinabyss.lovelace.security;
 
-import com.aloneinabyss.lovelace.service.TokenBlacklistService;
+import com.aloneinabyss.lovelace.security.service.TokenBlacklistService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;

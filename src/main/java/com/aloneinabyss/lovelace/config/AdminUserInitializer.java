@@ -1,7 +1,8 @@
 package com.aloneinabyss.lovelace.config;
 
-import com.aloneinabyss.lovelace.model.User;
-import com.aloneinabyss.lovelace.repository.UserRepository;
+import com.aloneinabyss.lovelace.auth.model.User;
+import com.aloneinabyss.lovelace.auth.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,6 +1,6 @@
 package com.aloneinabyss.lovelace.security;
 
-import com.aloneinabyss.lovelace.exception.ErrorResponse;
+import com.aloneinabyss.lovelace.shared.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
