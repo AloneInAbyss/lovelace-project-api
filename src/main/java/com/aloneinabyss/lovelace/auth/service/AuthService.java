@@ -11,7 +11,6 @@ import com.aloneinabyss.lovelace.auth.exception.ForgotPasswordMailPending;
 import com.aloneinabyss.lovelace.auth.exception.TokenReuseException;
 import com.aloneinabyss.lovelace.auth.model.User;
 import com.aloneinabyss.lovelace.auth.repository.UserRepository;
-import com.aloneinabyss.lovelace.config.JwtProperties;
 import com.aloneinabyss.lovelace.security.JwtTokenProvider;
 import com.aloneinabyss.lovelace.security.UserPrincipal;
 import com.aloneinabyss.lovelace.security.service.TokenBlacklistService;
@@ -45,17 +44,6 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
     private final TokenBlacklistService tokenBlacklistService;
-    private final JwtProperties jwtProperties;
-    
-    /**
-     * Get the refresh token expiration time in seconds.
-     * Used for setting cookie max-age.
-     *
-     * @return Refresh token expiration in seconds
-     */
-    public long getRefreshTokenExpirationSeconds() {
-        return jwtProperties.getRefreshExpiration() / 1000;
-    }
     
     /**
      * Register a new user account.

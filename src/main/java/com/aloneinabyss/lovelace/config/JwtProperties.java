@@ -20,6 +20,16 @@ public class JwtProperties {
      */
     private Cookie cookie = new Cookie();
     
+    /**
+     * Get the refresh token expiration time in seconds.
+     * Used for setting cookie max-age.
+     *
+     * @return Refresh token expiration in seconds
+     */
+    public long getRefreshTokenExpirationSeconds() {
+        return refreshExpiration / 1000;
+    }
+    
     @Data
     public static class Cookie {
         /**

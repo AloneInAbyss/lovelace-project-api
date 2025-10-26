@@ -22,6 +22,7 @@ import com.aloneinabyss.lovelace.auth.dto.RegisterResponse;
 import com.aloneinabyss.lovelace.auth.dto.ResendVerificationRequest;
 import com.aloneinabyss.lovelace.auth.dto.ResetPasswordRequest;
 import com.aloneinabyss.lovelace.auth.service.AuthService;
+import com.aloneinabyss.lovelace.config.JwtProperties;
 import com.aloneinabyss.lovelace.security.CookieUtil;
 import com.aloneinabyss.lovelace.security.SecurityUtils;
 
@@ -37,6 +38,7 @@ public class AuthController {
     
     private final AuthService authService;
     private final CookieUtil cookieUtil;
+    private final JwtProperties jwtProperties;
     
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -53,7 +55,7 @@ public class AuthController {
         
         // Set refresh token as httpOnly secure cookie
         // Get refresh token expiration from JWT properties (convert ms to seconds)
-        long refreshTokenMaxAge = authService.getRefreshTokenExpirationSeconds();
+        long refreshTokenMaxAge = jwtProperties.getRefreshTokenExpirationSeconds();
         cookieUtil.addRefreshTokenCookie(response, authTokens.getRefreshToken(), refreshTokenMaxAge);
         
         return ResponseEntity.ok(authTokens.getAuthResponse());
@@ -95,7 +97,7 @@ public class AuthController {
         AuthTokens authTokens = authService.refreshToken(tokenRequest);
         
         // Set new refresh token as httpOnly secure cookie
-        long refreshTokenMaxAge = authService.getRefreshTokenExpirationSeconds();
+        long refreshTokenMaxAge = jwtProperties.getRefreshTokenExpirationSeconds();
         cookieUtil.addRefreshTokenCookie(httpResponse, authTokens.getRefreshToken(), refreshTokenMaxAge);
         
         return ResponseEntity.ok(authTokens.getAuthResponse());
