@@ -8,7 +8,7 @@
 		<version>3.5.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>br.com.fiap</groupId>
+	<groupId>com.aloneinabyss</groupId>
 	<artifactId>lovelace-project-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>lovelace-project-api</name>
