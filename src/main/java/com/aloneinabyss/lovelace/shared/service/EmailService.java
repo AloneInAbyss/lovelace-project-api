@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     
     private final JavaMailSender mailSender;
+    private final MessageService messageService;
     
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -29,25 +30,19 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Verify Your Email - Lovelace Project");
-            message.setText(buildEmailContent(verificationUrl));
+            message.setSubject(messageService.getMessage("email.verification.subject"));
+            message.setText(buildVerificationEmailContent(verificationUrl));
             
             mailSender.send(message);
             log.info("Verification email sent to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send verification email", e);
+            throw new RuntimeException(messageService.getMessage("email.send.failed"), e);
         }
     }
     
-    private String buildEmailContent(String verificationUrl) {
-        return "Welcome to Lovelace Project!\n\n" +
-               "Please click the link below to verify your email address:\n\n" +
-               verificationUrl + "\n\n" +
-               "This link will expire in 24 hours.\n\n" +
-               "If you didn't create an account, please ignore this email.\n\n" +
-               "Best regards,\n" +
-               "Lovelace Project Team";
+    private String buildVerificationEmailContent(String verificationUrl) {
+        return messageService.getMessage("email.verification.body", verificationUrl);
     }
     
     @Async
@@ -56,12 +51,8 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Welcome to Lovelace Project!");
-            message.setText("Hello " + username + ",\n\n" +
-                    "Your email has been verified successfully!\n\n" +
-                    "Welcome to Lovelace Project.\n\n" +
-                    "Best regards,\n" +
-                    "Lovelace Project Team");
+            message.setSubject(messageService.getMessage("email.welcome.subject"));
+            message.setText(messageService.getMessage("email.welcome.body", username));
             
             mailSender.send(message);
             log.info("Welcome email sent to: {}", toEmail);
@@ -78,26 +69,19 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Password Reset Request - Lovelace Project");
+            message.setSubject(messageService.getMessage("email.password.reset.subject"));
             message.setText(buildPasswordResetEmailContent(resetUrl));
             
             mailSender.send(message);
             log.info("Password reset email sent to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send password reset email", e);
+            throw new RuntimeException(messageService.getMessage("email.send.failed"), e);
         }
     }
     
     private String buildPasswordResetEmailContent(String resetUrl) {
-        return "Hello,\n\n" +
-               "We received a request to reset your password for your Lovelace Project account.\n\n" +
-               "Please click the link below to reset your password:\n\n" +
-               resetUrl + "\n\n" +
-               "This link will expire in 1 hour.\n\n" +
-               "If you didn't request a password reset, please ignore this email and your password will remain unchanged.\n\n" +
-               "Best regards,\n" +
-               "Lovelace Project Team";
+        return messageService.getMessage("email.password.reset.body", resetUrl);
     }
     
     @Async
@@ -106,12 +90,8 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Password Changed - Lovelace Project");
-            message.setText("Hello " + username + ",\n\n" +
-                    "Your password has been changed successfully.\n\n" +
-                    "If you didn't make this change, please contact our support team immediately.\n\n" +
-                    "Best regards,\n" +
-                    "Lovelace Project Team");
+            message.setSubject(messageService.getMessage("email.password.changed.subject"));
+            message.setText(messageService.getMessage("email.password.changed.body", username));
             
             mailSender.send(message);
             log.info("Password changed notification email sent to: {}", toEmail);
