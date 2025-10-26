@@ -57,6 +57,15 @@ public class AuthService {
         return jwtProperties.getRefreshExpiration() / 1000;
     }
     
+    /**
+     * Register a new user account.
+     * Creates a new user with email verification required, generates a verification token,
+     * and sends a verification email to the user.
+     *
+     * @param request The registration request containing username, email, and password
+     * @return RegisterResponse containing user details and success message
+     * @throws RuntimeException if username or email is already taken
+     */
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username is already taken");
@@ -95,6 +104,13 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Verify a user's email address using the verification token.
+     * Enables the user account and sends a welcome email upon successful verification.
+     *
+     * @param token The email verification token
+     * @throws RuntimeException if token is invalid, expired, or email is already verified
+     */
     public void verifyEmail(String token) {
         User user = userRepository.findByEmailVerificationToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid verification token"));
@@ -118,6 +134,14 @@ public class AuthService {
         emailService.sendWelcomeEmail(user.getEmail(), user.getUsername());
     }
 
+    /**
+     * Resend the email verification link to a user.
+     * Generates a new verification token and sends it to the user's email.
+     * Prevents spam by checking if a recent verification email was already sent.
+     *
+     * @param email The email address to send verification to
+     * @throws RuntimeException if user not found, email already verified, or recent token exists
+     */
     public void resendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -144,6 +168,13 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), verificationToken);
     }
 
+    /**
+     * Check if a recent verification or reset token was generated within the last 5 minutes.
+     * Used to prevent spam and excessive token generation requests.
+     *
+     * @param user The user to check for recent tokens
+     * @return true if a recent token exists, false otherwise
+     */
     private boolean checkIfRecentTokenExists(User user) {
         if (user.getEmailVerificationToken() == null || user.getEmailVerificationTokenExpiry() == null) {
             return false;
@@ -163,6 +194,16 @@ public class AuthService {
         return minutesUntilExpiry > (24 * 60 - 5); // More than 23:55 remaining means created within last 5 minutes
     }
     
+    /**
+     * Authenticate a user and generate access and refresh tokens.
+     * Supports login with username or email. Verifies credentials and email verification status.
+     * Automatically resends verification email if not verified and token is expired.
+     *
+     * @param request The login request containing username/email and password
+     * @return AuthTokens containing access token, refresh token, and user details
+     * @throws RuntimeException if credentials are invalid
+     * @throws EmailNotVerifiedException if email is not verified
+     */
     public AuthTokens login(LoginRequest request) {
         // Try to find user by username or email
         User user = userRepository.findByUsername(request.getIdentity())
@@ -215,6 +256,16 @@ public class AuthService {
                 .build();
     }
     
+    /**
+     * Refresh access and refresh tokens using a valid refresh token.
+     * Implements token rotation by blacklisting the old refresh token after use.
+     * Validates token against password change timestamp to ensure token validity.
+     *
+     * @param request The refresh token request containing the current refresh token
+     * @return AuthTokens containing new access token, new refresh token, and user details
+     * @throws TokenReuseException if refresh token has been blacklisted (potential security breach)
+     * @throws RuntimeException if refresh token is invalid or expired
+     */
     public AuthTokens refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
         
@@ -275,6 +326,14 @@ public class AuthService {
                 .build();
     }
     
+    /**
+     * Initiate the password reset process by generating a reset token and sending it via email.
+     * Prevents spam by checking if a recent password reset email was sent within 5 minutes.
+     *
+     * @param email The email address of the user requesting password reset
+     * @throws RuntimeException if user not found with the provided email
+     * @throws ForgotPasswordMailPending if a recent password reset email was already sent
+     */
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
@@ -299,6 +358,15 @@ public class AuthService {
         emailService.sendPasswordResetEmail(user.getEmail(), token);
     }
     
+    /**
+     * Reset a user's password using a valid reset token.
+     * Updates the passwordChangedAt timestamp, which invalidates all existing JWT tokens.
+     * Sends a confirmation email after successful password reset.
+     *
+     * @param token The password reset token
+     * @param newPassword The new password to set
+     * @throws RuntimeException if token is invalid, expired, or new password matches current password
+     */
     public void resetPassword(String token, String newPassword) {
         // Find user by reset token
         User user = userRepository.findByPasswordResetToken(token)
