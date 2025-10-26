@@ -154,7 +154,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .errorCode("TOKEN_MALFORMED")
+                .errorCode(ErrorCode.TOKEN_INVALID.name())
                 .message(messageService.getMessage("auth.token.invalid"))
                 .path(request.getRequestURI())
                 .build();
@@ -173,7 +173,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .errorCode("TOKEN_SIGNATURE_INVALID")
+                .errorCode(ErrorCode.TOKEN_INVALID.name())
                 .message(messageService.getMessage("auth.token.invalid"))
                 .path(request.getRequestURI())
                 .build();

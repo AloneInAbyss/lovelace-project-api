@@ -14,6 +14,7 @@ public enum ErrorCode {
     TOKEN_INVALID("auth.token.invalid"),
     TOKEN_REVOKED("auth.refresh.token.revoked"),
     TOKEN_REUSED("auth.refresh.token.reused"),
+    AUTHENTICATION_REQUIRED("auth.authentication.required"),
     
     // Authorization errors (403)
     FORBIDDEN("auth.forbidden"),

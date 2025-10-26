@@ -1,6 +1,8 @@
 package com.aloneinabyss.lovelace.security;
 
+import com.aloneinabyss.lovelace.shared.exception.ErrorCode;
 import com.aloneinabyss.lovelace.shared.exception.ErrorResponse;
+import com.aloneinabyss.lovelace.shared.service.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -28,6 +30,7 @@ import java.time.LocalDateTime;
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     
     private final ObjectMapper objectMapper;
+    private final MessageService messageService;
     
     @Override
     public void commence(
@@ -49,8 +52,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     .timestamp(LocalDateTime.now())
                     .status(HttpServletResponse.SC_UNAUTHORIZED)
                     .error("Unauthorized")
-                    .errorCode("TOKEN_EXPIRED")
-                    .message("JWT token has expired. Please refresh your token or login again.")
+                    .errorCode(ErrorCode.TOKEN_EXPIRED.name())
+                    .message(messageService.getMessage("auth.token.expired"))
                     .path(request.getRequestURI())
                     .build();
         } else if (jwtException instanceof MalformedJwtException) {
@@ -58,8 +61,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     .timestamp(LocalDateTime.now())
                     .status(HttpServletResponse.SC_UNAUTHORIZED)
                     .error("Unauthorized")
-                    .errorCode("TOKEN_MALFORMED")
-                    .message("JWT token is malformed or invalid.")
+                    .errorCode(ErrorCode.TOKEN_INVALID.name())
+                    .message(messageService.getMessage("auth.token.invalid"))
                     .path(request.getRequestURI())
                     .build();
         } else if (jwtException instanceof SignatureException) {
@@ -67,8 +70,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     .timestamp(LocalDateTime.now())
                     .status(HttpServletResponse.SC_UNAUTHORIZED)
                     .error("Unauthorized")
-                    .errorCode("TOKEN_SIGNATURE_INVALID")
-                    .message("JWT signature validation failed.")
+                    .errorCode(ErrorCode.TOKEN_INVALID.name())
+                    .message(messageService.getMessage("auth.token.invalid"))
                     .path(request.getRequestURI())
                     .build();
         } else if (jwtException != null) {
@@ -76,8 +79,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     .timestamp(LocalDateTime.now())
                     .status(HttpServletResponse.SC_UNAUTHORIZED)
                     .error("Unauthorized")
-                    .errorCode("TOKEN_INVALID")
-                    .message("JWT token is invalid: " + jwtException.getMessage())
+                    .errorCode(ErrorCode.TOKEN_INVALID.name())
+                    .message(messageService.getMessage("auth.token.invalid"))
                     .path(request.getRequestURI())
                     .build();
         } else {
@@ -86,8 +89,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     .timestamp(LocalDateTime.now())
                     .status(HttpServletResponse.SC_UNAUTHORIZED)
                     .error("Unauthorized")
-                    .errorCode("AUTHENTICATION_REQUIRED")
-                    .message("Authentication is required to access this resource.")
+                    .errorCode(ErrorCode.AUTHENTICATION_REQUIRED.name())
+                    .message(messageService.getMessage("auth.authentication.required"))
                     .path(request.getRequestURI())
                     .build();
         }
