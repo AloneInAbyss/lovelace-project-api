@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.aloneinabyss.lovelace.auth.exception.EmailNotVerifiedException;
 import com.aloneinabyss.lovelace.auth.exception.ForgotPasswordMailPending;
 import com.aloneinabyss.lovelace.auth.exception.TokenReuseException;
-import com.aloneinabyss.lovelace.pages.wishlist.exception.WishlistItemAlreadyExistsException;
-import com.aloneinabyss.lovelace.pages.wishlist.exception.WishlistItemNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -116,36 +114,6 @@ public class GlobalExceptionHandler {
                 .build();
         
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-
-    @ExceptionHandler(WishlistItemAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleWishlistItemAlreadyExistsException(
-            WishlistItemAlreadyExistsException ex,
-            HttpServletRequest request
-    ) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    @ExceptionHandler(WishlistItemNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleWishlistItemNotFoundException(
-            WishlistItemNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
     @ExceptionHandler(TokenReuseException.class)
