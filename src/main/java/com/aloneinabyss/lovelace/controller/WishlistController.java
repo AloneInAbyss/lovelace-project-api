@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +30,6 @@ public class WishlistController {
     private final WishlistService wishlistService;
     
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<WishlistResponse> getWishlist(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
@@ -44,7 +42,6 @@ public class WishlistController {
     }
     
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<WishlistItemResponse> addToWishlist(
             Authentication authentication,
             @Valid @RequestBody AddToWishlistRequest request
@@ -55,7 +52,6 @@ public class WishlistController {
     }
     
     @DeleteMapping("/{gameId}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MessageResponse> removeFromWishlist(
             Authentication authentication,
             @PathVariable String gameId
@@ -68,7 +64,6 @@ public class WishlistController {
     }
     
     @PutMapping("/{gameId}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<WishlistItemResponse> updateWishlistItem(
             Authentication authentication,
             @PathVariable String gameId,
@@ -80,7 +75,6 @@ public class WishlistController {
     }
     
     @GetMapping("/check/{gameId}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<WishlistCheckResponse> checkGameInWishlist(
             Authentication authentication,
             @PathVariable String gameId
@@ -91,7 +85,6 @@ public class WishlistController {
     }
     
     @DeleteMapping("/clear")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MessageResponse> clearWishlist(Authentication authentication) {
         String userId = authentication.getName();
         wishlistService.clearWishlist(userId);
@@ -101,7 +94,6 @@ public class WishlistController {
     }
     
     @GetMapping("/count")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Long> getWishlistCount(Authentication authentication) {
         String userId = authentication.getName();
         long count = wishlistService.getWishlistCount(userId);
