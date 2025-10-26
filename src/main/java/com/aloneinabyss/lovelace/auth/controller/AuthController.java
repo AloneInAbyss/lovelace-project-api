@@ -25,6 +25,7 @@ import com.aloneinabyss.lovelace.auth.service.AuthService;
 import com.aloneinabyss.lovelace.config.JwtProperties;
 import com.aloneinabyss.lovelace.security.CookieUtil;
 import com.aloneinabyss.lovelace.security.SecurityUtils;
+import com.aloneinabyss.lovelace.shared.service.MessageService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,6 +40,7 @@ public class AuthController {
     private final AuthService authService;
     private final CookieUtil cookieUtil;
     private final JwtProperties jwtProperties;
+    private final MessageService messageService;
     
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -65,7 +67,7 @@ public class AuthController {
     public ResponseEntity<MessageResponse> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("Email verified successfully! You can now log in.")
+            .message(messageService.getMessage("auth.email.verified"))
             .build());    
     }
 
@@ -73,7 +75,7 @@ public class AuthController {
     public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         authService.resendVerificationEmail(request.getEmail());
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("Verification email sent!")
+            .message(messageService.getMessage("auth.email.verification.sent"))
             .build());
     }
     
@@ -88,7 +90,7 @@ public class AuthController {
         
         if (refreshToken == null || refreshToken.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(AuthResponse.builder()
-                    .message("Refresh token cookie not found or expired")
+                    .message(messageService.getMessage("auth.refresh.token.missing"))
                     .build());
         }
         
@@ -107,7 +109,7 @@ public class AuthController {
     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request.getEmail());
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("If an account exists with that email, a password reset link has been sent.")
+            .message(messageService.getMessage("auth.password.reset.sent"))
             .build());
     }
     
@@ -115,7 +117,7 @@ public class AuthController {
     public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("Password has been reset successfully! You can now log in with your new password.")
+            .message(messageService.getMessage("auth.password.reset.success"))
             .build());
     }
     
@@ -128,7 +130,7 @@ public class AuthController {
         String username = SecurityUtils.getCurrentUsername();
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(MessageResponse.builder()
-                .message("User not authenticated")
+                .message(messageService.getMessage("auth.user.not.authenticated"))
                 .build());
         }
         
@@ -139,7 +141,7 @@ public class AuthController {
         cookieUtil.deleteRefreshTokenCookie(httpResponse);
         
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("Password changed successfully! Please log in again with your new password.")
+            .message(messageService.getMessage("auth.password.change.success"))
             .build());
     }
     
@@ -157,7 +159,7 @@ public class AuthController {
         
         if (accessToken == null || accessToken.isEmpty()) {
             return ResponseEntity.badRequest().body(MessageResponse.builder()
-                .message("No access token provided")
+                .message(messageService.getMessage("auth.logout.no.token"))
                 .build());
         }
         
@@ -172,7 +174,7 @@ public class AuthController {
         cookieUtil.deleteRefreshTokenCookie(httpResponse);
         
         return ResponseEntity.ok(MessageResponse.builder()
-            .message("Logged out successfully")
+            .message(messageService.getMessage("auth.logout.success"))
             .build());
     }
     

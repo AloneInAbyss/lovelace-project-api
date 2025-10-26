@@ -15,6 +15,7 @@ import com.aloneinabyss.lovelace.security.JwtTokenProvider;
 import com.aloneinabyss.lovelace.security.UserPrincipal;
 import com.aloneinabyss.lovelace.security.service.TokenBlacklistService;
 import com.aloneinabyss.lovelace.shared.service.EmailService;
+import com.aloneinabyss.lovelace.shared.service.MessageService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class AuthService {
     private final EmailService emailService;
     private final TokenBlacklistService tokenBlacklistService;
     private final TokenValidationService tokenValidationService;
+    private final MessageService messageService;
     
     /**
      * Register a new user account.
@@ -56,11 +58,11 @@ public class AuthService {
      */
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username is already taken");
+            throw new RuntimeException(messageService.getMessage("auth.register.username.taken"));
         }
         
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email is already in use");
+            throw new RuntimeException(messageService.getMessage("auth.register.email.taken"));
         }
         
         String verificationToken = UUID.randomUUID().toString();
@@ -88,7 +90,7 @@ public class AuthService {
         return RegisterResponse.builder()
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
-                .message("User registered successfully. Please check your email for verification instructions.")
+                .message(messageService.getMessage("auth.register.success"))
                 .build();
     }
 
@@ -101,15 +103,15 @@ public class AuthService {
      */
     public void verifyEmail(String token) {
         User user = userRepository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.email.token.invalid")));
 
         if (user.isEmailVerified()) {
-            throw new RuntimeException("Email has already been verified");
+            throw new RuntimeException(messageService.getMessage("auth.email.already.verified"));
         }
 
         if (user.getEmailVerificationTokenExpiry() == null || 
             user.getEmailVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification token has expired");
+            throw new RuntimeException(messageService.getMessage("auth.email.token.expired"));
         }
 
         user.setEmailVerified(true);
@@ -132,17 +134,14 @@ public class AuthService {
      */
     public void resendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found")));
         
         if (user.isEmailVerified()) {
-            throw new RuntimeException("Email is already verified");
+            throw new RuntimeException(messageService.getMessage("auth.email.already.verified"));
         }
 
         if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
-            throw new RuntimeException(
-                "There is a pending verification email. " +
-                "If you didn't receive it, you can request a new one in a few minutes."
-            );
+            throw new RuntimeException(messageService.getMessage("auth.email.verification.pending"));
         }
         
         // Generate new verification token
@@ -170,23 +169,18 @@ public class AuthService {
         // Try to find user by username or email
         User user = userRepository.findByUsername(request.getIdentity())
             .or(() -> userRepository.findByEmail(request.getIdentity()))
-            .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+            .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.login.invalid.credentials")));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new RuntimeException(messageService.getMessage("auth.login.invalid.credentials"));
         }
 
         if (!user.isEmailVerified()) {
             if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
-                throw new EmailNotVerifiedException(
-                    "Email not verified. Please check your inbox for the verification email. " +
-                    "If you didn't receive it, you can request a new one in a few minutes."
-                );
+                throw new EmailNotVerifiedException(messageService.getMessage("auth.login.email.not.verified.pending"));
             } else {
                 resendVerificationEmail(user.getEmail());
-                throw new EmailNotVerifiedException(
-                    "Email not verified. A new verification email has been sent to you."
-                );
+                throw new EmailNotVerifiedException(messageService.getMessage("auth.login.email.not.verified.sent"));
             }
         }
         
@@ -241,13 +235,13 @@ public class AuthService {
                 
                 // Optional: Invalidate all tokens for this user by forcing re-login
                 // For now, we'll just reject the request
-                throw new TokenReuseException("Refresh token has been revoked. Please login again.");
+                throw new TokenReuseException(messageService.getMessage("auth.refresh.token.revoked"));
             } catch (TokenReuseException e) {
                 // Re-throw TokenReuseException
                 throw e;
             } catch (Exception e) {
                 log.error("Failed to extract username from blacklisted token: {}", e.getMessage());
-                throw new TokenReuseException("Invalid refresh token. Please login again.");
+                throw new TokenReuseException(messageService.getMessage("auth.refresh.token.invalid"));
             }
         }
         
@@ -259,7 +253,7 @@ public class AuthService {
         
         // Validate the refresh token with password change timestamp check
         if (!jwtTokenProvider.validateToken(refreshToken, userPrincipal, userPrincipal.getPasswordChangedAt())) {
-            throw new RuntimeException("Invalid or expired refresh token");
+            throw new RuntimeException(messageService.getMessage("auth.refresh.token.invalid.or.expired"));
         }
         
         // Blacklist the old refresh token immediately (rotation)
@@ -298,13 +292,11 @@ public class AuthService {
      */
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found.email", email)));
         
         // Check if there's a recent password reset request (within 5 minutes)
         if (tokenValidationService.hasRecentPasswordResetToken(user)) {
-            throw new ForgotPasswordMailPending(
-                "A password reset email was recently sent. Please check your inbox or wait a few minutes before requesting another one."
-            );
+            throw new ForgotPasswordMailPending(messageService.getMessage("auth.password.reset.pending"));
         }
         
         // Generate password reset token
@@ -331,17 +323,17 @@ public class AuthService {
     public void resetPassword(String token, String newPassword) {
         // Find user by reset token
         User user = userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid password reset token"));
+                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.password.reset.token.invalid")));
         
         // Check if token is expired
         if (user.getPasswordResetTokenExpiry() == null || 
             user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Password reset token has expired");
+            throw new RuntimeException(messageService.getMessage("auth.password.reset.token.expired"));
         }
         
         // Validate that new password is different from the current password
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new RuntimeException("New password must be different from the current password");
+            throw new RuntimeException(messageService.getMessage("auth.password.must.be.different"));
         }
         
         LocalDateTime now = LocalDateTime.now();
@@ -373,16 +365,16 @@ public class AuthService {
     public void changePassword(String username, String currentPassword, String newPassword) {
         // Find the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(messageService.getMessage("auth.user.not.found")));
         
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new RuntimeException(messageService.getMessage("auth.password.current.incorrect"));
         }
         
         // Validate that new password is different from the current password
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new RuntimeException("New password must be different from the current password");
+            throw new RuntimeException(messageService.getMessage("auth.password.must.be.different"));
         }
         
         LocalDateTime now = LocalDateTime.now();
