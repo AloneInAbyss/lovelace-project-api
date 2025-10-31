@@ -181,10 +181,10 @@ public class AuthService {
 
         if (!user.isEmailVerified()) {
             if (tokenValidationService.hasRecentEmailVerificationToken(user)) {
-                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED);
+                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED_PENDING);
             } else {
                 resendVerificationEmail(user.getEmail());
-                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED);
+                throw new AuthenticationException(ErrorCode.EMAIL_NOT_VERIFIED_SENT);
             }
         }
         

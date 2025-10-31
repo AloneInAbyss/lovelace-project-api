@@ -9,7 +9,8 @@ public enum ErrorCode {
     
     // Authentication errors (401)
     INVALID_CREDENTIALS("auth.login.invalid.credentials"),
-    EMAIL_NOT_VERIFIED("auth.login.email.not.verified"),
+    EMAIL_NOT_VERIFIED_PENDING("auth.login.email.not.verified.pending"),
+    EMAIL_NOT_VERIFIED_SENT("auth.login.email.not.verified.pending"),
     TOKEN_EXPIRED("auth.token.expired"),
     TOKEN_INVALID("auth.token.invalid"),
     TOKEN_REVOKED("auth.refresh.token.revoked"),
