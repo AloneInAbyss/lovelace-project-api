@@ -25,6 +25,8 @@ import com.aloneinabyss.lovelace.auth.service.AuthService;
 import com.aloneinabyss.lovelace.config.JwtProperties;
 import com.aloneinabyss.lovelace.security.CookieUtil;
 import com.aloneinabyss.lovelace.security.SecurityUtils;
+import com.aloneinabyss.lovelace.shared.exception.AuthenticationException;
+import com.aloneinabyss.lovelace.shared.exception.ErrorCode;
 import com.aloneinabyss.lovelace.shared.service.MessageService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -86,13 +88,9 @@ public class AuthController {
     ) {
         // Get refresh token from cookie only
         String refreshToken = cookieUtil.getRefreshTokenFromCookie(httpRequest)
-                .orElse(null);
-        
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(AuthResponse.builder()
-                    .message(messageService.getMessage("auth.refresh.token.missing"))
-                    .build());
-        }
+                .orElseThrow(() -> new AuthenticationException(
+                    ErrorCode.REFRESH_TOKEN_MISSING
+                ));
         
         // Refresh the token
         RefreshTokenRequest tokenRequest = new RefreshTokenRequest(refreshToken);
@@ -129,9 +127,9 @@ public class AuthController {
         // Get the authenticated username from SecurityContext
         String username = SecurityUtils.getCurrentUsername();
         if (username == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(MessageResponse.builder()
-                .message(messageService.getMessage("auth.user.not.authenticated"))
-                .build());
+            throw new AuthenticationException(
+                ErrorCode.AUTHENTICATION_REQUIRED
+            );
         }
         
         // Change the password

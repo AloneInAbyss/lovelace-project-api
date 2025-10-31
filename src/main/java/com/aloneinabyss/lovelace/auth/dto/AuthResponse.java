@@ -43,10 +43,5 @@ public class AuthResponse {
      * Roles/authorities of the authenticated user
      */
     private Set<String> roles;
-
-    /**
-     * Optional message (used for registration confirmation)
-     */
-    private String message;
     
 }
