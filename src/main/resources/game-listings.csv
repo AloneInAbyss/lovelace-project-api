@@ -1,0 +1,21 @@
+listing_id,game_id,condition,price,city,state,listing_url
+LST001,224517,new,89.99,São Paulo,SP,https://example.com/listings/brass-birmingham-new-sp-001
+LST002,224517,used,65.50,Rio de Janeiro,RJ,https://example.com/listings/brass-birmingham-used-rj-002
+LST003,161936,new,120.00,Curitiba,PR,https://example.com/listings/pandemic-legacy-new-pr-003
+LST004,342942,used,95.00,Belo Horizonte,MG,https://example.com/listings/ark-nova-used-mg-004
+LST005,174430,auction,150.00,Porto Alegre,RS,https://example.com/listings/gloomhaven-auction-rs-005
+LST006,224517,auction,70.00,Brasília,DF,https://example.com/listings/brass-birmingham-auction-df-006
+LST007,161936,used,85.00,São Paulo,SP,https://example.com/listings/pandemic-legacy-used-sp-007
+LST008,342942,new,110.00,Salvador,BA,https://example.com/listings/ark-nova-new-ba-008
+LST009,174430,used,140.00,Fortaleza,CE,https://example.com/listings/gloomhaven-used-ce-009
+LST010,224517,used,62.00,Recife,PE,https://example.com/listings/brass-birmingham-used-pe-010
+LST011,161936,new,115.00,Manaus,AM,https://example.com/listings/pandemic-legacy-new-am-011
+LST012,342942,auction,88.00,Florianópolis,SC,https://example.com/listings/ark-nova-auction-sc-012
+LST013,174430,new,165.00,Goiânia,GO,https://example.com/listings/gloomhaven-new-go-013
+LST014,224517,new,92.00,Campinas,SP,https://example.com/listings/brass-birmingham-new-sp-014
+LST015,161936,auction,95.00,São Luís,MA,https://example.com/listings/pandemic-legacy-auction-ma-015
+LST016,342942,used,98.00,Vitória,ES,https://example.com/listings/ark-nova-used-es-016
+LST017,174430,auction,135.00,Natal,RN,https://example.com/listings/gloomhaven-auction-rn-017
+LST018,224517,used,68.00,João Pessoa,PB,https://example.com/listings/brass-birmingham-used-pb-018
+LST019,161936,used,90.00,Aracaju,SE,https://example.com/listings/pandemic-legacy-used-se-019
+LST020,342942,new,108.00,Maceió,AL,https://example.com/listings/ark-nova-new-al-020
