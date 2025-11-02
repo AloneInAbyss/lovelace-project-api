@@ -299,6 +299,109 @@
 			]
 		},
 		{
+			"name": "Games",
+			"item": [
+				{
+					"name": "Search Games",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/search?query=Brass&page=0&size=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "Brass",
+									"description": "Search term for game name"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Number of results per page"
+								}
+							]
+						},
+						"description": "Search for games by name with pagination. Returns game details along with the lowest price listing for each condition (new, used, auction)."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Games (All)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/search?page=0&size=20",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"search"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of results per page"
+								}
+							]
+						},
+						"description": "Get all games with pagination (empty query returns all results)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Game by ID",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/games/224517",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"224517"
+							]
+						},
+						"description": "Retrieve detailed information about a specific game including the lowest price listing for each condition."
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Actuator",
 			"item": [
 				{
