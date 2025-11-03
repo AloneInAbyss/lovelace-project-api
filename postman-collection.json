@@ -402,6 +402,120 @@
 			]
 		},
 		{
+			"name": "Wishlist",
+			"item": [
+				{
+					"name": "Add to Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"gameId\": \"224517\"\n}"
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist"
+							]
+						},
+						"description": "Add a game to the authenticated user's wishlist."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist/224517",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist",
+								"224517"
+							]
+						},
+						"description": "Remove a game from the authenticated user's wishlist."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/wishlist?page=0&size=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"wishlist"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Number of results per page"
+								}
+							]
+						},
+						"description": "Get the authenticated user's wishlist with pagination. Returns games with their details and lowest prices."
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Actuator",
 			"item": [
 				{
